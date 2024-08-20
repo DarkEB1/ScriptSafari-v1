@@ -1,3 +1,9 @@
 # ScriptSafari-v1
 
-Enter OpenAPI key to test summaries
+Requirements:
+Validators
+Openai
+Selenium
+
+Run Locally:
+Enter openapi key in 'summary_generator.py'
