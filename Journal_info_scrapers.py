@@ -1,6 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 import json
+import re
 
 def get_soup(url)  -> object:
     try:
@@ -87,11 +88,18 @@ def generic_scrape(url) -> dict:
     }
     return attributes
 
-def doi_scrape(url) -> dict:
+def extract_doi(url):
+    doi_pattern = re.compile(r'10\.\d{4,9}/[-._;()/:A-Z0-9]+', re.IGNORECASE)
+    match = doi_pattern.search(url)
+    if match:
+        return match.group(0)
+    else:
+        return None
+
+def doi_scrape(doi) -> dict:
     header = {
         "Accept": "application/vnd.citationstyles.csl+json"
     }
-    doi = #DOI HERE
     doiapi = f"https://doi.org/{doi}"
     response = requests.get(doiapi, headers=header)
     if response.status_code == 200:
@@ -110,7 +118,13 @@ def doi_scrape(url) -> dict:
 
 
 url = "https://example-academic-article.com"
-article_data = doi_scrape(url) or arxiv_scrape(url) or google_scholar_scrape(url) or generic_scrape(url) or None
+doi = extract_doi(url)
+
+if doi:
+    article_data = doi_scrape(doi) 
+else:
+    article_data = arxiv_scrape(url) or google_scholar_scrape(url) or generic_scrape(url) or None
+
 if article_data:
     print(json.dumps(article_data, indent=2))
 else:
