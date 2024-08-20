@@ -2,7 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 import json
 
-def get_soup(url):
+def get_soup(url)  -> object:
     try:
         response = requests.get(url)
         response.raise_for_status()
@@ -12,7 +12,7 @@ def get_soup(url):
         return None
 
 #meta tag scraping called by generic scrape
-def extract_meta_content(soup, name=None, property=None):
+def extract_meta_content(soup, name=None, property=None) -> str:
     if name:
         meta_tag = soup.find("meta", {"name": name})
     else:
@@ -22,7 +22,7 @@ def extract_meta_content(soup, name=None, property=None):
     return None
 
     #Generic scraper for non-DOI journal articles.
-def generic_scrape(url):
+def generic_scrape(url) -> dict:
     soup = get_soup(url)
     if not soup:
         return None
@@ -69,8 +69,8 @@ def generic_scrape(url):
             pub_date = json_data.get("datePublished", pub_date)
             journal_volume = json_data.get("volumeNumber", journal_volume)
             journal_pages = json_data.get("pagination", journal_pages)
-        except json.JSONDecodeError as e:
-            print(f"Error parsing JSON-LD: {e}")
+        except json.JSONDecodeError as err:
+            print(f"Error parsing JSON-LD: {err}")
 
     if soup.find("meta", property="og:site_name"):
         journal_name = extract_meta_content(soup, name="citation_journal_title") or soup.find("meta", property="og:site_name").get("content")
@@ -86,6 +86,27 @@ def generic_scrape(url):
         "journal_pages": journal_pages
     }
     return attributes
+
+def doi_scrape(url) -> dict:
+    header = {
+        "Accept": "application/vnd.citationstyles.csl+json"
+    }
+    doi = #DOI HERE
+    doiapi = f"https://doi.org/{doi}"
+    response = requests.get(doiapi, headers=header)
+    if response.status_code == 200:
+        raw = response.json()
+        attributes = {
+            "title": raw.get('title'),
+            "authors": [author['family'] + ", " + author.get('given', '') for author in raw.get("author", [])],
+            "publication_date": raw.get("issued").get("date-parts")[0] if raw.get("issued") else "N/A",
+            "journal_name": raw.get('container-title'),
+            "journal_volume": raw.get('volume'),
+            "journal_pages": raw.get('page')
+        }
+        return attributes
+    else:
+        return None
 
 
 url = "https://example-academic-article.com"
