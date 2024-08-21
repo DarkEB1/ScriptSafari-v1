@@ -2,6 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 import json
 import re
+import xml.etree.ElementTree as et
 
 def get_soup(url)  -> object:
     try:
@@ -83,6 +84,8 @@ def generic_scrape(url) -> dict:
         affiliation_meta_tags = soup.find_all("meta", {"name": "citation_author_institution"})
         affiliations = [tag["content"] for tag in affiliation_meta_tags] if affiliation_meta_tags else None
     
+    doi = extract_meta_content(soup, name="citation_doi") or extract_meta_content(soup, name="dc.Identifier") or extract_meta_content(soup, property="og:doi")
+
     attributes = {
         "title": title,
         "authors": authors,
@@ -90,7 +93,8 @@ def generic_scrape(url) -> dict:
         "publication_date": pub_date,
         "journal_name": journal_name,
         "journal_volume": journal_volume,
-        "journal_pages": journal_pages
+        "journal_pages": journal_pages,
+        "doi": doi
     }
     return attributes
 
@@ -102,13 +106,13 @@ def extract_doi(url) -> str:
     else:
         return None
 
-def jstor_match(url) -> bool:
-    jstor_pattern = re.compile(r'https?://(www\.)?jstor\.org/.*', re.IGNORECASE)
-    return bool(jstor_pattern.match(url))
-
 def arxiv_match(url) -> bool:
     arxiv_pattern = re.compile(r'https?://(www\.)?arxiv\.org/(abs|pdf)/[0-9]+\.[0-9]+(\.pdf)?', re.IGNORECASE)
-    return bool(arxiv_pattern.match(url))
+    match = arxiv_pattern.match(url)
+    if match:
+        return match(3)
+    else:
+        return None
 
 def doi_scrape(doi) -> dict:
     header = {
@@ -130,8 +134,41 @@ def doi_scrape(doi) -> dict:
             "publication_date": raw.get("issued").get("date-parts")[0] if raw.get("issued") else "N/A",
             "journal_name": raw.get('container-title'),
             "journal_volume": raw.get('volume'),
-            "journal_pages": raw.get('page')
+            "journal_pages": raw.get('page'),
+            "doi": doi
         }
+        return attributes
+    else:
+        return None
+
+def arxiv_scrape(arxiv_id) -> dict:
+    arxiv_url = f"http://export.arxiv.org/api/query?id_list={arxiv_id}"
+    response = requests.get(arxiv_url)
+    
+    if response.status_code == 200:
+        root = et.fromstring(response.content)
+        authors = []
+        title = root.find(".//{http://www.w3.org/2005/Atom}title").text.strip()
+        publication_date = root.find(".//{http://www.w3.org/2005/Atom}published").text
+        
+        for author in root.findall(".//{http://www.w3.org/2005/Atom}author"):
+            name = author.find("{http://www.w3.org/2005/Atom}name").text
+            authors.append(name)
+
+        doi = root.find(".//{http://arxiv.org/schemas/atom}doi")
+        doi = doi.text if doi is not None else None
+           
+        attributes = {
+            "title": title,
+            "authors": authors,
+            "affiliations": None,
+            "publication_date": publication_date,
+            "journal_name": None,
+            "journal_volume": None,
+            "journal_pages": None,
+            "doi": doi
+        }
+        
         return attributes
     else:
         return None
@@ -139,15 +176,17 @@ def doi_scrape(doi) -> dict:
 
 url = "https://example-academic-article.com"
 doi = extract_doi(url)
+arxiv = arxiv_match(url)
 
 if doi:
     article_data = doi_scrape(doi) 
-elif jstor_match(url):
-    article_data = jstor_scrape(url) 
-elif arxiv_match(url):
-    article_data = arxiv_scrape(url)
+elif arxiv:
+    article_data = arxiv_scrape(arxiv)
 else:
     article_data = generic_scrape(url) or None
+
+if not doi and article_data["doi"]:
+    article_data = doi_scrape(article_data["doi"])
 
 if article_data:
     print(json.dumps(article_data, indent=2))
