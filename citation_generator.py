@@ -24,22 +24,22 @@ class Citation_gen:
         #When all entered, generate according to style
         #return according to style
         style_function_map = {
-            0: apa,
-            1: chicago,
-            2: cse,
-            3: harvard
+            0: 'apa',
+            1: 'chicago',
+            2: 'cse',
+            3: 'harvard'
         }
         for category in self.attr:
             if self.attr[category] is None:
                 #PROMPT FOR USER TO ASSIGN MANUALLY
                 newvalue = str(input(f'Manually assign a value for {category}: '))
                 self.attr[category] = newvalue
-        func = style_function_map.get(style)
+        func = style_function_map.get(self.style)
         if func:
             citation = func(self)
             return citation
         else:
-            print(f"Invalid style: {style}")
+            print(f"Invalid style: {self.style}")
     
     def apa(self) -> str:
         citation = self.attr['author'] + '. (' + self.attr['date'] + '). ' + self.attr['title'] + '. ' + self.attr['journal'] + ', ' + self.attr['issue'] + ', ' + self.attr['pages'] + '.\n' + self.link

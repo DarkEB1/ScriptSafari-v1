@@ -37,7 +37,7 @@ def generic_scrape(url) -> dict:
     author_meta_tags = soup.find_all("meta", {"name": "citation_author"})
     if author_meta_tags:
         for tag in author_meta_tags:
-        authors = tag["content"] 
+            authors = tag["content"] 
     else:
         authors = None
     if not authors:
@@ -66,7 +66,7 @@ def generic_scrape(url) -> dict:
         try:
             json_data = json.loads(json_ld_data.string)
             title = json_data.get("headline", title)
-            if isinstance(json_data.get("author", []), list)
+            if isinstance(json_data.get("author", []), list):
                 authors = [author.get("name", "") for author in json_data.get("author", [])]
                 affiliations = [author.get("affiliation", {}).get("name", "") for author in json_data.get("author", []) if author.get("affiliation")]
             pub_date = json_data.get("datePublished", pub_date)
@@ -107,10 +107,10 @@ def extract_doi(url) -> str:
         return None
 
 def arxiv_match(url) -> bool:
-    arxiv_pattern = re.compile(r'https?://(www\.)?arxiv\.org/(abs|pdf)/[0-9]+\.[0-9]+(\.pdf)?', re.IGNORECASE)
-    match = arxiv_pattern.match(url)
+    arxiv_pattern = re.compile(r'https?://(www\.)?arxiv\.org/(abs|pdf)/([0-9]+\.[0-9]+)(\.pdf)?', re.IGNORECASE)
+    match = re.match(arxiv_pattern, url)
     if match:
-        return match(3)
+        return match.group(3)
     else:
         return None
 
@@ -147,8 +147,9 @@ def arxiv_scrape(arxiv_id) -> dict:
     
     if response.status_code == 200:
         root = et.fromstring(response.content)
+        entry = root.find("{http://www.w3.org/2005/Atom}entry")
         authors = []
-        title = root.find(".//{http://www.w3.org/2005/Atom}title").text.strip()
+        title = entry.find(".//{http://www.w3.org/2005/Atom}title").text.strip()
         publication_date = root.find(".//{http://www.w3.org/2005/Atom}published").text
         
         for author in root.findall(".//{http://www.w3.org/2005/Atom}author"):
@@ -174,7 +175,7 @@ def arxiv_scrape(arxiv_id) -> dict:
         return None
 
 
-url = "https://example-academic-article.com"
+url = "https://www.tandfonline.com/doi/epdf/10.1080/0025570X.1985.11977137?needAccess=true"
 doi = extract_doi(url)
 arxiv = arxiv_match(url)
 
@@ -185,8 +186,9 @@ elif arxiv:
 else:
     article_data = generic_scrape(url) or None
 
-if not doi and article_data["doi"]:
-    article_data = doi_scrape(article_data["doi"])
+if not doi and article_data:
+    if article_data["doi"]:
+        article_data = doi_scrape(article_data["doi"])
 
 if article_data:
     print(json.dumps(article_data, indent=2))
