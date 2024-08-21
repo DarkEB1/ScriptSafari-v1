@@ -67,6 +67,7 @@ def generic_scrape(url) -> dict:
             title = json_data.get("headline", title)
             if isinstance(json_data.get("author", []), list)
                 authors = [author.get("name", "") for author in json_data.get("author", [])]
+                affiliations = [author.get("affiliation", {}).get("name", "") for author in json_data.get("author", []) if author.get("affiliation")]
             pub_date = json_data.get("datePublished", pub_date)
             journal_volume = json_data.get("volumeNumber", journal_volume)
             journal_pages = json_data.get("pagination", journal_pages)
@@ -77,10 +78,15 @@ def generic_scrape(url) -> dict:
         journal_name = extract_meta_content(soup, name="citation_journal_title") or soup.find("meta", property="og:site_name").get("content")
     else:
         journal_name = None
+
+    if not affiliations:
+        affiliation_meta_tags = soup.find_all("meta", {"name": "citation_author_institution"})
+        affiliations = [tag["content"] for tag in affiliation_meta_tags] if affiliation_meta_tags else None
     
     attributes = {
         "title": title,
         "authors": authors,
+        "affiliations": affiliations,
         "publication_date": pub_date,
         "journal_name": journal_name,
         "journal_volume": journal_volume,
@@ -88,13 +94,21 @@ def generic_scrape(url) -> dict:
     }
     return attributes
 
-def extract_doi(url):
+def extract_doi(url) -> str:
     doi_pattern = re.compile(r'10\.\d{4,9}/[-._;()/:A-Z0-9]+', re.IGNORECASE)
     match = doi_pattern.search(url)
     if match:
         return match.group(0)
     else:
         return None
+
+def jstor_match(url) -> bool:
+    jstor_pattern = re.compile(r'https?://(www\.)?jstor\.org/.*', re.IGNORECASE)
+    return bool(jstor_pattern.match(url))
+
+def arxiv_match(url) -> bool:
+    arxiv_pattern = re.compile(r'https?://(www\.)?arxiv\.org/(abs|pdf)/[0-9]+\.[0-9]+(\.pdf)?', re.IGNORECASE)
+    return bool(arxiv_pattern.match(url))
 
 def doi_scrape(doi) -> dict:
     header = {
@@ -104,9 +118,15 @@ def doi_scrape(doi) -> dict:
     response = requests.get(doiapi, headers=header)
     if response.status_code == 200:
         raw = response.json()
+        authors = [author['family'] + ", " + author.get('given', '') for author in raw.get("author", [])]
+        affiliations = [
+            [aff['name'] for aff in author.get('affiliation', [])]
+            for author in raw.get("author", [])
+            ]
         attributes = {
             "title": raw.get('title'),
-            "authors": [author['family'] + ", " + author.get('given', '') for author in raw.get("author", [])],
+            "authors": authors,
+            "affiliations": affiliations,
             "publication_date": raw.get("issued").get("date-parts")[0] if raw.get("issued") else "N/A",
             "journal_name": raw.get('container-title'),
             "journal_volume": raw.get('volume'),
@@ -122,8 +142,12 @@ doi = extract_doi(url)
 
 if doi:
     article_data = doi_scrape(doi) 
+elif jstor_match(url):
+    article_data = jstor_scrape(url) 
+elif arxiv_match(url):
+    article_data = arxiv_scrape(url)
 else:
-    article_data = arxiv_scrape(url) or google_scholar_scrape(url) or generic_scrape(url) or None
+    article_data = generic_scrape(url) or None
 
 if article_data:
     print(json.dumps(article_data, indent=2))
