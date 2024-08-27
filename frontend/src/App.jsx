@@ -1,29 +1,34 @@
 import React from 'react';
-import "./App.css";
-import LoginButton from "./components/LoginButton";
-import "bootstrap/dist/css/bootstrap.min.css";
-import { useAuth0 } from "@auth0/auth0-react";
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Auth0Provider } from '@auth0/auth0-react';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import About from './pages/About';
+import ProtectedRoute from './ProtectedRoute';
 
-const App = () => {
-  const { isAuthenticated } = useAuth0();
+function onRedirectCallback(appState) {
+  window.history.replaceState(
+    {},
+    document.title,
+    appState?.returnTo || window.location.pathname
+  );
+}
 
+function App() {
   return (
     <Router>
-      <div>
+      <Auth0Provider
+        domain="dev-dic5qyxmh3023gsq.us.auth0.com"
+        clientId="WsWUDvT0VtriDCaey0ZHu74mQ2Av3iUb"
+        redirectUri={window.location.origin}
+        onRedirectCallback={onRedirectCallback}
+      >
         <Navbar />
-        {isAuthenticated ? (
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/about" element={<About />} />
-          </Routes>
-        ):(
-          <LoginButton />
-        )}
-      </div>
+        <Routes>
+          <Route path="/about" element={<About />} />
+          <Route path="/" element={<ProtectedRoute component={<Home />} />} />
+        </Routes>
+      </Auth0Provider>
     </Router>
   );
 }
