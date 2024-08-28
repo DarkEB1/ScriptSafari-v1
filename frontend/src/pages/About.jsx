@@ -1,4 +1,14 @@
-export default function About() {
-    return <h1>About Page, This is the 'start' page and will link to itself, login, and graph</h1>;
+import Navbar from "../components/Navbar";
+
+
+  function About() {
+    return (
+      <>
+        <div>
+          <h3>About Page, This is the 'start' page and will link to itself, login, and graph</h3>
+        </div>
+      </>
+    );
   }
-  
+
+export default About

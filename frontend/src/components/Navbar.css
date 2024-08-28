@@ -1,0 +1,53 @@
+/* Navbar.css */
+
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    border-bottom: 2px solid black;
+    font-family: 'Arial', sans-serif;
+    font-weight: bold;
+    font-size: 18px;
+  }
+  
+  .navbar-logo {
+    font-size: 24px;
+  }
+  
+  .navbar-links {
+    list-style: none;
+    display: flex;
+    gap: 20px;
+    margin: 0;
+    padding: 0;
+    position: absolute;
+    right: 20px; 
+    top: 10px;
+  }
+  
+  .navbar-links li {
+    text-transform: uppercase;
+  }
+  
+  .navbar-links li a,
+  .navbar-links li .auth-link {
+    text-decoration: none;
+    color: black;
+    position: relative;
+    padding-bottom: 5px;
+  }
+  
+  .navbar-links li a:hover,
+  .navbar-links li .auth-link:hover,
+  .navbar-links li a.active,
+  .navbar-links li .auth-link.active {
+    color: black;
+    text-decoration: line-through; 
+  }
+  
+  .navbar-auth {
+    display: flex;
+    align-items: center;
+  }
+  

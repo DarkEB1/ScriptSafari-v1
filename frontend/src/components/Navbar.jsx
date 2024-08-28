@@ -1,37 +1,86 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth0 } from '@auth0/auth0-react';
+import './Navbar.css';
 
 const Navbar = () => {
   const { loginWithRedirect, logout, isAuthenticated, isLoading } = useAuth0();
-  console.log(isAuthenticated)
+  const location = useLocation();
+
   if (isLoading) {
     return <div>Loading...</div>;
   }
 
   return (
-    <nav>
-      <ul>
+    <nav className="navbar">
+      <div className="navbar-logo">SCRIPTSAFARI</div>
+      <ul className="navbar-links">
         <li>
-          <Link to="/about">About</Link>
+          <Link
+            to="/about"
+            className={location.pathname === '/about' ? 'active' : ''}
+          >
+            About
+          </Link>
+        </li>
+        <li>
+          <Link
+            to="/graph"
+            className={location.pathname === '/graph' ? 'active' : ''}
+          >
+            Graph
+          </Link>
         </li>
         {isAuthenticated && (
           <>
             <li>
-              <Link to="/">Home</Link>
+              <Link
+                to="/"
+                className={location.pathname === '/' ? 'active' : ''}
+              >
+                Home
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/profile"
+                className={location.pathname === '/profile' ? 'active' : ''}
+              >
+                Profile
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/reputation"
+                className={
+                  location.pathname === '/reputation' ? 'active' : ''
+                }
+              >
+                Reputation
+              </Link>
             </li>
           </>
         )}
+        <li>
+          {!isAuthenticated ? (
+            <a
+              href="#login"
+              onClick={() => loginWithRedirect()}
+              className="auth-link"
+            >
+              Log In
+            </a>
+          ) : (
+            <a
+              href="#logout"
+              onClick={() => logout({ returnTo: window.location.origin })}
+              className="auth-link"
+            >
+              Log Out
+            </a>
+          )}
+        </li>
       </ul>
-      <div>
-        {!isAuthenticated ? (
-          <button onClick={() => loginWithRedirect()}>Login</button>
-        ) : (
-          <button onClick={() => logout({ returnTo: window.location.origin })}>
-            Logout
-          </button>
-        )}
-      </div>
     </nav>
   );
 };
