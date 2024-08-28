@@ -25,7 +25,7 @@ function App() {
     <Router>
       <Auth0Provider
         domain="dev-dic5qyxmh3023gsq.us.auth0.com"
-        clientId="WsWUDvT0VtriDCaey0ZHu74mQ2Av3iUb"
+        clientId="Mer00G3ZeV9ns6fUfkJsxXmDyxkiO3O5"
         authorizationParams={{ redirect_uri: window.location.origin }}
         onRedirectCallback={onRedirectCallback}
       >

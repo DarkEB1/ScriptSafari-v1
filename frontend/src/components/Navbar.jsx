@@ -6,7 +6,7 @@ import './Navbar.css';
 const Navbar = () => {
   const { loginWithRedirect, logout, isAuthenticated, isLoading } = useAuth0();
   const location = useLocation();
-
+  console.log(isAuthenticated)
   if (isLoading) {
     return <div>Loading...</div>;
   }
@@ -47,16 +47,6 @@ const Navbar = () => {
                 className={location.pathname === '/profile' ? 'active' : ''}
               >
                 Profile
-              </Link>
-            </li>
-            <li>
-              <Link
-                to="/reputation"
-                className={
-                  location.pathname === '/reputation' ? 'active' : ''
-                }
-              >
-                Reputation
               </Link>
             </li>
           </>
