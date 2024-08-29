@@ -1,3 +1,6 @@
+from article_info_scrapers import *
+import validators
+
 class Citation_gen:
     #Citation generator in selected style, can be called without adding to graph prior to calling
     
@@ -12,17 +15,14 @@ class Citation_gen:
         else:
             if validators.url(link):
                 self.link = link
-                self.attr = #CALL SCRAPERS HERE
+                self.attr = scrape(link)
             else: 
                 out = "Invalid paper link"
                 return out
-        citation = generate_citation():
+        citation = self.generate_citation()
         return citation
 
     def generate_citation(self) -> str:
-        #Check for null in attributes, if any null, ask for these parameters to be entered
-        #When all entered, generate according to style
-        #return according to style
         style_function_map = {
             0: 'apa',
             1: 'chicago',
@@ -31,9 +31,7 @@ class Citation_gen:
         }
         for category in self.attr:
             if self.attr[category] is None:
-                #PROMPT FOR USER TO ASSIGN MANUALLY
-                newvalue = str(input(f'Manually assign a value for {category}: '))
-                self.attr[category] = newvalue
+                self.attr[category] = category.upper()
         func = style_function_map.get(self.style)
         if func:
             citation = func(self)

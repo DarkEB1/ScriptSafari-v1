@@ -1,3 +1,6 @@
+
+from difflib import SequenceMatcher
+
 def journal_similarity(journal, found_match, threshold=0.87) -> bool:
     #Difflib sequencematcher
     return SequenceMatcher(a=journal, b=found_match).ratio()>threshold

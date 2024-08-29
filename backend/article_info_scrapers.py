@@ -173,24 +173,21 @@ def arxiv_scrape(arxiv_id) -> dict:
     else:
         return None
 
+def scrape(url):
+    doi = extract_doi(url)
+    arxiv = arxiv_match(url)
+    if doi:
+        article_data = doi_scrape(doi) 
+    elif arxiv:
+        article_data = arxiv_scrape(arxiv)
+    else:
+        article_data = generic_scrape(url) or None
 
-url = "https://www.tandfonline.com/doi/epdf/10.1080/0025570X.1985.11977137?needAccess=true"
-doi = extract_doi(url)
-arxiv = arxiv_match(url)
+    if not doi and article_data:
+        if article_data["doi"]:
+            article_data = doi_scrape(article_data["doi"])
 
-if doi:
-    article_data = doi_scrape(doi) 
-elif arxiv:
-    article_data = arxiv_scrape(arxiv)
-else:
-    article_data = generic_scrape(url) or None
-
-if not doi and article_data:
-    if article_data["doi"]:
-        article_data = doi_scrape(article_data["doi"])
-
-if article_data:
-    print(json.dumps(article_data, indent=2))
-else:
-    print("Failed to scrape the article. Enter Manually?")
-    #Prompt user for manual information entry
+    if article_data:
+        print(json.dumps(article_data, indent=2))
+    else:
+        print("Failed to scrape the article. Enter Manually?")

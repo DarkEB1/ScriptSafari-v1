@@ -1,3 +1,6 @@
+import validators
+import openai
+
 class Summary_gen:
     #Summary Generation using openapi, can be called prior to addition to graph
     #No need for deconstructor as python garbage collection will handle
@@ -10,8 +13,8 @@ class Summary_gen:
     def __init__(self, request) -> str:
         self.request = request
         openai.api_key = 'enter_openapi_key'
-        if validators.ur(request)
-            out = generate_summary(request)
+        if validators.ur(request):
+            out = self.generate_summary(request)
         else:
             out = "invalid URL detected, please try again"
         return out
