@@ -12,6 +12,8 @@ import json
 from article_info_scrapers import *
 from reputational_score import *
 from graph import *
+from citation_generator import *
+from summary_generator import *
 
 app = Flask(__name__)
 CORS(app)
@@ -30,15 +32,19 @@ def add_paper(paper_link):
     if article_data["title"]:
         #add node to graph with repscore of 0, add all edges, if added to graph, add to database
         score = defaultscore(article_data, maingraph) #written to database within that program
-        #return success, score, all article data
+        #return success, store score, all article data, add ID stored to queries database with all null fields
     else:
         return jsonify({"error": "Paper not found"}), 404
+
+@app.route('/graph')
+def graph_display():
+    return jsonify(maingraph.graph())
 
 @app.route("/get-node/<node_title>")
 def get_node(node_title):
     cursor = graph_entriesdb.cursor(dictionary=True)
     query = "SELECT * FROM graph_entries WHERE title = %s"
-    cursor.execute(query, (node_title,))
+    cursor.execute(query, (node_title))
     node_data = cursor.fetchone()
     cursor.close()
     
@@ -47,6 +53,82 @@ def get_node(node_title):
     else:
         return jsonify({"error": "Node not found"}), 404
   
+@app.route("/summary/<paper_link>")
+def get_summary(paper_link):
+    cursor = graph_entriesdb.cursor(dictionary=True)
+    query = "SELECT id FROM graph_entries WHERE link = %s"
+    cursor.execute(query, (paper_link))
+    eid = cursor.fetchone()
+    eid = eid['id']
+    cursor.close()
+    
+    if eid:
+        cursor2 = queriesdb.cursor(dictionary=True)
+        query = "SELECT summary FROM queries WHERE id = %s"
+        cursor2.execute(query, (eid))
+        summary = cursor2.fetchone()
+        cursor2.close()
+        if summary:
+            return summary['summary'], 200
+        else:
+            summary = Summary_gen(paper_link)
+            cursor3 = queriesdb.cursor()
+            query = """
+                UPDATE queries
+                SET summary = %s
+                WHERE id = %s
+            """
+            cursor3.execute(query, (summary, eid))
+            queriesdb.commit()
+            cursor3.close()
+            return summary, 201
+    else:
+        return "error: Paper not in Graph", 404
+    
+@app.route("/citation/<paper_link>")
+def get_citation(paper_link):
+    query_type = request.args.get('style')
+    cursor = graph_entriesdb.cursor(dictionary=True)
+    query = "SELECT * FROM graph_entries WHERE link = %s"
+    cursor.execute(query, (paper_link))
+    eid = cursor.fetchone()
+    newid = eid['id']
+    cursor.close()
+    
+    if newid:
+        cursor2 = queriesdb.cursor(dictionary=True)
+        query = "SELECT %s FROM queries WHERE id = %s"
+        cursor2.execute(query, (query_type, newid))
+        citation = cursor2.fetchone()
+        cursor2.close()
+        if citation:
+            return citation[query_type], 200
+        else:
+            paper_attributes = {
+                "title": eid['title'],
+                "authors": eid['authors'],
+                "affiliations": eid['affiliations'],
+                "publication_date": eid['publication_date'],
+                "journal_name": eid['journal_name'],
+                "journal_volume": eid['journal_volume'],
+                "journal_pages": eid['journal_pages'],
+                "doi": eid['doi']        
+            }
+            citation = Citation_gen(query_type, paper_link, paper_attributes)
+            cursor3 = queriesdb.cursor()
+            query = """
+                UPDATE queries
+                SET %s = %s
+                WHERE id = %s
+            """
+            cursor3.execute(query, (query_type, citation, newid))
+            queriesdb.commit()
+            cursor3.close()
+            return citation, 201
+    else:
+        return "error: Paper not in Graph", 404
+
+
 @app.route("/create-user", methods=["POST"])
 def create_user():
     try:

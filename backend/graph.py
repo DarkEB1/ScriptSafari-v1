@@ -9,6 +9,9 @@ class Graph(object):
     def resume_graph(self, graph):
         self._graph = graph
 
+    def graph(self):
+        return self._graph
+
     def fetch_score(self, paper):
         try:
             return self._scores[paper]

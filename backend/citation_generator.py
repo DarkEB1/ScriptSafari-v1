@@ -7,18 +7,10 @@ class Citation_gen:
     """
     @params int.style:citation style selection, str.link:link for article, dict.scraped_attributes: author, year, title, journal, issue, pages, doi (can be null), bool.processed:has issue been processed?
     """
-    def __init__(self, style, link, scraped_attributes, processed) -> str:
+    def __init__(self, style, link, scraped_attributes) -> str:
         self.style = style
-        if processed:
-            self.attr = scraped_attributes
-            self.link = link
-        else:
-            if validators.url(link):
-                self.link = link
-                self.attr = scrape(link)
-            else: 
-                out = "Invalid paper link"
-                return out
+        self.attr = scraped_attributes
+        self.link = link
         citation = self.generate_citation()
         return citation
 
