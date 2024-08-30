@@ -2,15 +2,12 @@
 from collections import defaultdict
 
 class Graph(object):
-    def __init__(self, connections, scores):
-        self._graph = defaultdict(set)
-        self._scores = defaultdict(int)
-        self.add_connections(connections)
-        self.add_scores(scores)
-    
-    def add_scores(self, scores):
-        for paper, score in scores:
-            self._scores[paper] = score
+    def __init__(self, graph, scores):
+        self._graph = graph
+        self._scores = scores
+
+    def resume_graph(self, graph):
+        self._graph = graph
 
     def fetch_score(self, paper):
         try:
@@ -26,10 +23,6 @@ class Graph(object):
             del self._scores[paper]
         except KeyError:
             pass
-
-    def add_connections(self, connections):
-        for origin, connection in connections:
-            self.add(origin, connection)
     
     def add(self, origin, connection):
         self._graph[origin].add(connection)

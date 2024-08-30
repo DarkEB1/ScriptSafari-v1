@@ -11,6 +11,7 @@ import Profile from './pages/Profile';
 import Citations from './pages/Citations';
 import Summary from './pages/Summary';
 import Admin from './pages/Admin';
+import UserManagement from './hooks/UserManagement';
 
 function onRedirectCallback(appState) {
   window.history.replaceState(
@@ -18,6 +19,10 @@ function onRedirectCallback(appState) {
     document.title,
     appState?.returnTo || window.location.pathname
   );
+}
+
+function App() {
+  UserManagement();
 }
 
 function App() {

@@ -215,5 +215,3 @@ def scrape(url):
         print(json.dumps(article_data, indent=2))
     else:
         print("Failed to scrape the article. Enter Manually?")
-
-print(scrape('https://arxiv.org/abs/cond-mat/0102536'))
