@@ -105,13 +105,12 @@ def extract_doi(url) -> str:
     else:
         return None
 
-def arxiv_match(url) -> bool:
-    arxiv_pattern = re.compile(r'https?://(www\.)?arxiv\.org/(abs|pdf)/([0-9]+\.[0-9]+)(\.pdf)?', re.IGNORECASE)
+def arxiv_match(url: str) -> str:
+    arxiv_pattern = re.compile(r'https?://(www\.)?arxiv\.org/(abs|pdf)/([a-z\-]+/[0-9]{7}|[0-9]+\.[0-9]+)(\.pdf)?', re.IGNORECASE)
     match = re.match(arxiv_pattern, url)
     if match:
         return match.group(3)
-    else:
-        return None
+    return None
 
 def doi_scrape(doi) -> dict:
     header = {
@@ -140,7 +139,10 @@ def doi_scrape(doi) -> dict:
     else:
         return None
 
-def arxiv_scrape(arxiv_id) -> dict:
+import requests
+import xml.etree.ElementTree as et
+
+def arxiv_scrape(arxiv_id: str) -> dict:
     arxiv_url = f"http://export.arxiv.org/api/query?id_list={arxiv_id}"
     response = requests.get(arxiv_url)
     
@@ -148,24 +150,44 @@ def arxiv_scrape(arxiv_id) -> dict:
         root = et.fromstring(response.content)
         entry = root.find("{http://www.w3.org/2005/Atom}entry")
         authors = []
-        title = entry.find(".//{http://www.w3.org/2005/Atom}title").text.strip()
-        publication_date = root.find(".//{http://www.w3.org/2005/Atom}published").text
         
+        title = entry.find(".//{http://www.w3.org/2005/Atom}title").text.strip()
+        
+        publication_date = root.find(".//{http://www.w3.org/2005/Atom}published").text
+        publication_year = publication_date.split("-")[0] if publication_date else None
+
         for author in root.findall(".//{http://www.w3.org/2005/Atom}author"):
             name = author.find("{http://www.w3.org/2005/Atom}name").text
-            authors.append(name)
+            affiliation = author.find("{http://arxiv.org/schemas/atom}affiliation")
+            authors.append({
+                "name": name,
+                "affiliation": affiliation.text if affiliation is not None else None
+            })
 
         doi = root.find(".//{http://arxiv.org/schemas/atom}doi")
         doi = doi.text if doi is not None else None
-           
+        
+        journal_ref = root.find(".//{http://arxiv.org/schemas/atom}journal_ref")
+        journal_name = None
+        journal_volume = None
+        journal_pages = None
+        
+        if journal_ref is not None and journal_ref.text:
+            journal_parts = journal_ref.text.split(',')
+            if len(journal_parts) > 0:
+                journal_name = journal_parts[0].strip()
+            if len(journal_parts) > 1:
+                journal_volume = journal_parts[1].strip()
+            if len(journal_parts) > 2:
+                journal_pages = journal_parts[2].strip().split()[0]
+
         attributes = {
             "title": title,
             "authors": authors,
-            "affiliations": None,
-            "publication_date": publication_date,
-            "journal_name": None,
-            "journal_volume": None,
-            "journal_pages": None,
+            "publication_year": publication_year,
+            "journal_name": journal_name,
+            "journal_volume": journal_volume,
+            "journal_pages": journal_pages,
             "doi": doi
         }
         
@@ -173,9 +195,11 @@ def arxiv_scrape(arxiv_id) -> dict:
     else:
         return None
 
+
 def scrape(url):
     doi = extract_doi(url)
     arxiv = arxiv_match(url)
+    print(arxiv)
     if doi:
         article_data = doi_scrape(doi) 
     elif arxiv:
@@ -191,3 +215,5 @@ def scrape(url):
         print(json.dumps(article_data, indent=2))
     else:
         print("Failed to scrape the article. Enter Manually?")
+
+print(scrape('https://arxiv.org/abs/cond-mat/0102536'))
