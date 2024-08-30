@@ -16,10 +16,10 @@ class Citation_gen:
 
     def generate_citation(self) -> str:
         style_function_map = {
-            0: 'apa',
-            1: 'chicago',
-            2: 'cse',
-            3: 'harvard'
+            'apa': 'apa',
+            'chicago': 'chicago',
+            'cse': 'cse',
+            'harvard': 'harvard'
         }
         for category in self.attr:
             if self.attr[category] is None:
