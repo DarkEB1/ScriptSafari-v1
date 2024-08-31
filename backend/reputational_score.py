@@ -24,6 +24,7 @@ def defaultscore(articleinfo, maingraph, db):
     cursor.close()
     authortopscore = int(authortopscore[0])
     journalscore = (fetch_journal_rank(journal)/29166)*100
+    print("journalscore"+str(journalscore))
     for author in authors:
         cits = fetch_author_citations(author) or 0
         if cits<authortopscore:
@@ -37,15 +38,17 @@ def defaultscore(articleinfo, maingraph, db):
             cursor.close()
             tot_auth_score += (cits/authortopscore)*100
     tot_auth_score = tot_auth_score/len(authors) or 0
+    print("authorscore"+str(tot_auth_score))
     for affiliation in affiliations:
         tot_aff_score += (fetch_institution_rank(affiliation)/9055)*100
     if len(affiliations)==0:
         tot_aff_score = 0
     else:
         tot_aff_score = tot_aff_score/len(affiliations)
+    print(tot_aff_score)
     finalscore = (tot_aff_score+tot_auth_score+journalscore)/3
-    finalscore = nearest_neighbour(article, maingraph, finalscore, db)
-    return {article: finalscore}
+    newscore = nearest_neighbour(article, maingraph, finalscore, db, visited=None)
+    return {article: newscore}
 
 def nearest_neighbour(article, maingraph, currentscore, db, visited=None):
     if visited is None:
@@ -54,17 +57,18 @@ def nearest_neighbour(article, maingraph, currentscore, db, visited=None):
     tocheck = maingraph.findconnections(article)
     avg = 0
     if len(tocheck) == 0:
-        return 50
+        avg = 50
     else:
         for node in tocheck:
             avg += maingraph.fetch_score(node)
         avg = avg/len(tocheck)
-        currentscore = (currentscore+avg)/2
-        maingraph.update_score(currentscore, article)
-        write_score(article, currentscore, db)
-        for node in tocheck:
-            if node not in visited:
-                nearest_neighbour(node, maingraph, maingraph.fetch_score(node), visited)
+    currentscore = (currentscore+avg)/2
+    maingraph.update_score(currentscore, article)
+    write_score(article, currentscore, db)
+    for node in tocheck:
+        if node not in visited:
+            nearest_neighbour(node, maingraph, maingraph.fetch_score(node), db, visited)
+    return currentscore
     #TODO write updated score to maingraph, and to database
 
 def write_score(article, score, db):

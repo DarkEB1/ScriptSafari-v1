@@ -15,8 +15,6 @@ class Graph(object):
         self._graph = graph
 
     def firstsetscore(self, title):
-        
-        self._scores[title] = set()
         self._scores[title] = 0
 
     def graph(self):
@@ -42,10 +40,10 @@ class Graph(object):
     
     def add(self, origin, connection):
         if origin not in self._graph:
-            self._graph[origin] = set()
+            self._graph[origin] = []
         if connection:
-            self._graph[origin].add(connection)
-            self._graph[connection].add(origin)
+            self._graph[origin].append(connection)
+            self._graph[connection].append(origin)
     
     def remove(self, removed):
         for paper, connections in self._graph.items():
