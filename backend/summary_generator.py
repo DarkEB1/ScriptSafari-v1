@@ -12,7 +12,7 @@ class Summary_gen:
     """
     def __init__(self, request) -> str:
         self.request = request
-        openai.api_key = 'enter_openapi_key'
+        openai.api_key = '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'
         if validators.ur(request):
             out = self.generate_summary(request)
         else:
@@ -31,4 +31,7 @@ class Summary_gen:
         prompt=f"Summarize the following academic paper:\n\n{self.request}",
         max_tokens=200
         )
+        self.summary = response.choices[0].text.strip()
         return response.choices[0].text.strip()
+    
+    

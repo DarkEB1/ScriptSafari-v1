@@ -23,8 +23,8 @@ app = Flask(__name__)
 CORS(app)
 global db
 db = mysql.connector.connect(
-    host="5.tcp.eu.ngrok.io",  # ngrok host
-    port= 11525,                # ngrok port
+    host="0.tcp.eu.ngrok.io",  # ngrok host
+    port= 19605,                # ngrok port
     user="root",               
     password="",               
     database="scriptsafariv1"    
@@ -183,16 +183,19 @@ def graph_display():
 
 @app.route("/get-node/<node_title>")
 def get_node(node_title):
-    cursor = db.cursor(dictionary=True)
-    query = "SELECT * FROM `graph-entries` WHERE title = %s"
-    cursor.execute(query, (node_title,))
-    node_data = cursor.fetchone()
-    cursor.close()
-    
-    if node_data:
-        return jsonify(node_data), 200
-    else:
-        return jsonify({"error": "Node not found"}), 404
+    try:
+        cursor = db.cursor(dictionary=True)
+        query = "SELECT * FROM `graph-entries` WHERE title = %s"
+        cursor.execute(query, (node_title,))
+        node_data = cursor.fetchone()
+        cursor.close()
+        
+        if node_data:
+            return jsonify(node_data), 200
+        else:
+            return jsonify({"error": "Node not found"}), 404
+    except Exception as e:
+        return jsonify({"error": "An error occurred while processing the paper"}), 500
   
 @app.route("/summary/<path:paper_link>")
 def get_summary(paper_link):
@@ -230,41 +233,44 @@ def get_summary(paper_link):
 @app.route("/citation/<path:paper_link>")
 def get_citation(paper_link):
     paper_link = urllib.parse.unquote(paper_link)
+    print(paper_link)
     query_type = request.args.get('style')
     cursor = db.cursor(dictionary=True)
     query = "SELECT * FROM `graph-entries` WHERE link = %s"
     cursor.execute(query, (paper_link,))
     eid = cursor.fetchone()
-    newid = eid['id']
+    print(eid)
+    if eid:
+        newid = eid["id"]
     cursor.close()
     
+    print(newid)
     if newid:
         cursor2 = db.cursor(dictionary=True)
-        query = "SELECT %s FROM queries WHERE id = %s"
-        cursor2.execute(query, (query_type, newid))
+        query = "SELECT * FROM queries WHERE id = %s"
+        cursor2.execute(query, (newid,))
         citation = cursor2.fetchone()
         cursor2.close()
-        if citation:
+        print(citation)
+        if citation[query_type] != None:
             return citation[query_type], 200
         else:
             paper_attributes = {
                 "title": eid['title'],
-                "authors": eid['authors'],
-                "affiliations": eid['affiliations'],
-                "publication_date": eid['publication_date'],
-                "journal_name": eid['journal_name'],
-                "journal_volume": eid['journal_volume'],
-                "journal_pages": eid['journal_pages'],
+                "author": (eid['authors'])[0],
+                "affiliations": (eid['affiliations'])[0],
+                "date": eid['publication_date'],
+                "journal": eid['journal_name'],
+                "issue": eid['journal_volume'],
+                "pages": eid['journal_pages'],
                 "doi": eid['doi']        
             }
-            citation = Citation_gen(query_type, paper_link, paper_attributes)
+            citationobj = Citation_gen(query_type, paper_link, paper_attributes)
+            citation = citationobj.generate_citation()
+            print(citation)
             cursor3 = db.cursor()
-            query = """
-                UPDATE queries
-                SET %s = %s
-                WHERE id = %s
-            """
-            cursor3.execute(query, (query_type, citation, newid))
+            query = f"UPDATE queries SET {query_type} = %s WHERE id = %s"
+            cursor3.execute(query, (citation, newid))
             db.commit()
             cursor3.close()
             return citation, 201
