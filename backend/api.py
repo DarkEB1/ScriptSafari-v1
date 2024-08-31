@@ -213,16 +213,15 @@ def get_summary(paper_link):
         cursor2.execute(query, (eid,))
         summary = cursor2.fetchone()
         cursor2.close()
-        if summary:
+        if summary["summary"] != None:
+
             return summary['summary'], 200
         else:
-            summary = Summary_gen(paper_link)
+            summaryobj = Summary_gen(paper_link)
+            summary = summaryobj.fetch_sum()
+            print(summary)
             cursor3 = db.cursor()
-            query = """
-                UPDATE queries
-                SET summary = %s
-                WHERE id = %s
-            """
+            query = "UPDATE queries SET summary = %s WHERE id = %s"
             cursor3.execute(query, (summary, eid))
             db.commit()
             cursor3.close()
