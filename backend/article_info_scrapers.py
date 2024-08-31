@@ -213,7 +213,7 @@ def scrape(url):
             article_data = doi_scrape(article_data["doi"])
 
     if article_data:
-        print(json.dumps(article_data, indent=2))
+        return article_data
     else:
         print("Failed to scrape the article. Enter Manually?")
 

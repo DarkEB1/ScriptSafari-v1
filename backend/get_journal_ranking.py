@@ -7,7 +7,7 @@ def journal_similarity(journal, found_match, threshold=0.87) -> bool:
 
 def fetch_journal_rank(journal) -> int:
     rank = -1
-    with open('journals.csv', "r") as rank_list:
+    with open('/workspaces/ScriptSafari-v1/backend/journals.csv', "r") as rank_list:
         for line in rank_list:
             rank += 1   
             start = line.find('"')

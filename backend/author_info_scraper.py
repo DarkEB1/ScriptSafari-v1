@@ -8,4 +8,7 @@ def fetch_author_citations(author_id):
         return 0
 
     author_filled = scholarly.fill(author)
-    return int(author_filled['citedby'])
+    if 'citedby' in author_filled:
+        return int(author_filled['citedby'])
+    else:
+        return 0

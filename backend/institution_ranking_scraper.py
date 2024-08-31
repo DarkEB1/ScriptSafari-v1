@@ -2,7 +2,7 @@ from get_journal_ranking import journal_similarity
 
 def fetch_institution_rank(instiution) -> int:
     rank = -1
-    with open('institutions.csv', "r") as rank_list:
+    with open('/workspaces/ScriptSafari-v1/backend/institutions.csv', "r") as rank_list:
         for line in rank_list:
             rank += 1   
             start = line.find(',')

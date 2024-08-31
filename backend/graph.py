@@ -3,13 +3,20 @@ from collections import defaultdict
 
 class Graph(object):
     def __init__(self, graph, scores):
+        if graph is None:
+            graph = {}
         self._graph = graph
+        if scores is None:
+            scores = {}
         self._scores = scores
+
 
     def resume_graph(self, graph):
         self._graph = graph
 
     def firstsetscore(self, title):
+        
+        self._scores[title] = set()
         self._scores[title] = 0
 
     def graph(self):
@@ -34,8 +41,11 @@ class Graph(object):
             pass
     
     def add(self, origin, connection):
-        self._graph[origin].add(connection)
-        self._graph[connection].add(origin)
+        if origin not in self._graph:
+            self._graph[origin] = set()
+        if connection:
+            self._graph[origin].add(connection)
+            self._graph[connection].add(origin)
     
     def remove(self, removed):
         for paper, connections in self._graph.items():

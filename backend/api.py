@@ -17,62 +17,95 @@ from graph import *
 from citation_generator import *
 from summary_generator import *
 from author_info_scraper import *
+import urllib
 
 app = Flask(__name__)
 CORS(app)
-db = mysql.connector.connect(host="localhost", user="root", password="", database="scriptsafari")
+db = mysql.connector.connect(
+    host="2.tcp.eu.ngrok.io",  # ngrok host
+    port=12820,                # ngrok port
+    user="root",               
+    password="",               
+    database="scriptsafari"    
+)
+cursor = db.cursor()
+query1 = "SELECT content FROM graph WHERE cid=1"
+cursor.execute(query1)
+graph_data = cursor.fetchone()
+cursor.close()
+cursor2 = db.cursor()
+query2 = "SELECT content FROM graph WHERE cid=2"
+cursor2.execute(query2)
+scores_data = cursor2.fetchone()
+print(graph_data[0], scores_data[0])
+global maingraph
+maingraph = Graph(graph=graph_data[0], scores=scores_data[0])
+print(maingraph)
+if db.is_connected():
+    print("connected successfuly")
 
 @app.route("/")
 def home():
     return 'ScriptSafari-API-v1'
 
-@app.route('/add-paper/<paper_link>')
+@app.route('/add-paper/<path:paper_link>')
 def add_paper(paper_link):
     user = request.args.get('email')
+    print(user, paper_link)
+    paper_link = urllib.parse.unquote(paper_link)
     article_data = scrape(paper_link)
+    print(article_data)
     if article_data["title"]:
         cursor = db.cursor(dictionary=True)
-        query = "SELECT * FROM graph-entries WHERE title = %s"
-        cursor.execute(query, (article_data["title"]))
+        query = "SELECT * FROM `graph-entries` WHERE title = %s"
+        cursor.execute(query, (article_data["title"],))
         exists = cursor.fetchone()
         cursor.close()
         if exists:
             return jsonify({"error": "Node already in graph"}), 404
         else:
             graphcursor = db.cursor()
-            authors_list = eval(article_data["auhors"])
-            affiliations_list = eval(article_data["affiliations"])
+            authors_list = article_data["authors"]
+            affiliations_list = article_data["affiliations"]
             query = """
             SELECT title 
-            FROM graph-entries
+            FROM `graph-entries`
             WHERE journal_name = %s 
             OR authors LIKE %s
             OR affiliations LIKE %s
             """
             like_authors_pattern = '%' + '%'.join(authors_list) + '%'
             like_affiliations_pattern = '%' + '%'.join(affiliations_list) + '%'
-            graphcursor.execute(query, (article_data["title"], like_authors_pattern, like_affiliations_pattern))
-            connected_titles = [row[0] for row in cursor.fetchall()]
+            try:
+                graphcursor.execute(query, (article_data["title"], like_authors_pattern, like_affiliations_pattern))
+                connected_titles = [row[0] for row in graphcursor.fetchall()]
+            except mysql.connector.Error as err:
+                print(f"Error: {err}")
+                connected_titles = []
             graphcursor.close()
             maingraph.firstsetscore(article_data["title"])
+            maingraph.add(article_data["title"], connection=None)
             for connection in connected_titles:
                 maingraph.add(article_data["title"], connection)
             ucursor = db.cursor()
             uquery = "SELECT uid FROM users WHERE email = %s"
-            ucursor.execute(uquery, (user))
-            uid = cursor.fetchone()
+            ucursor.execute(uquery, (user,))
+            uid = ucursor.fetchone()
             ucursor.close()
+            uid = uid[0]
+            authors_string = ', '.join(article_data["authors"])
+            affiliations_string = ', '.join(article_data["affiliations"])
             cursor2 = db.cursor(dictionary=True)
-            query = "INSERT INTO graph-entries (uid, link, title, authors, affiliations, publication_date, journal_name, journal_volume, journal_pages, doi) VALUES %s, %s, %s, %s, %s, %s, %s, %s, %s, %s"
-            cursor2.execute(query, (uid, paper_link, article_data["title"], article_data["authors"], article_data["affiliations"], article_data["publication_date"], article_data["journal_name"], article_data["journal_volume"], article_data["journal_pages"], article_data["doi"]))
+            query = "INSERT INTO `graph-entries` (uid, link, title, authors, affiliations, publication_date, journal_name, journal_volume, journal_pages, doi) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+            cursor2.execute(query, (uid, paper_link, article_data["title"], authors_string, affiliations_string, article_data["publication_date"], article_data["journal_name"], article_data["journal_volume"], article_data["journal_pages"], article_data["doi"]))
             db.commit()
-            cursor2.close()
-            score = defaultscore(article_data, maingraph) #written to database within that program
+            print(maingraph.graph())
+            score = defaultscore(article_data, maingraph, db) #written to database within that program
             finalcursor = db.cursor()
-            finalquery = "UPDATE graph SET content = %s WHERE id = 1"
-            finalcursor.execute(finalquery, (maingraph.graph()))
-            finalquery = "UPDATE graph SET content = %s WHERE id = 2"
-            finalcursor.execute(finalquery, (maingraph.scores()))
+            finalquery = "UPDATE graph SET content = %s WHERE cid = 1"
+            finalcursor.execute(finalquery, (maingraph.graph(),))
+            finalquery = "UPDATE graph SET content = %s WHERE cid = 2"
+            finalcursor.execute(finalquery, (maingraph.scores(),))
             db.commit()
             finalcursor.close()
             processed = {
@@ -89,13 +122,13 @@ def add_paper(paper_link):
                 "score": score,
             }
             idcursor = db.cursor()
-            idquery = "SELECT id FROM graph-entries WHERE title=%s"
-            idcursor.execute(idquery, (article_data["title"]))
+            idquery = "SELECT id FROM `graph-entries` WHERE title=%s"
+            idcursor.execute(idquery, (article_data["title"],))
             pid = idcursor.fetchone()
             idcursor.close()
             qcursor = db.cursor()
             qquery = "INSERT INTO queries (id) VALUES %s"
-            qcursor.execute(qquery, (pid))
+            qcursor.execute(qquery, (pid,))
             db.commit()
             qcursor.close()
             return jsonify(processed), 200
@@ -109,8 +142,8 @@ def graph_display():
 @app.route("/get-node/<node_title>")
 def get_node(node_title):
     cursor = db.cursor(dictionary=True)
-    query = "SELECT * FROM graph-entries WHERE title = %s"
-    cursor.execute(query, (node_title))
+    query = "SELECT * FROM `graph-entries` WHERE title = %s"
+    cursor.execute(query, (node_title,))
     node_data = cursor.fetchone()
     cursor.close()
     
@@ -119,11 +152,12 @@ def get_node(node_title):
     else:
         return jsonify({"error": "Node not found"}), 404
   
-@app.route("/summary/<paper_link>")
+@app.route("/summary/<path:paper_link>")
 def get_summary(paper_link):
+    paper_link = urllib.parse.unquote(paper_link)
     cursor = db.cursor(dictionary=True)
-    query = "SELECT id FROM graph-entries WHERE link = %s"
-    cursor.execute(query, (paper_link))
+    query = "SELECT id FROM `graph-entries` WHERE link = %s"
+    cursor.execute(query, (paper_link,))
     eid = cursor.fetchone()
     eid = eid['id']
     cursor.close()
@@ -131,7 +165,7 @@ def get_summary(paper_link):
     if eid:
         cursor2 = db.cursor(dictionary=True)
         query = "SELECT summary FROM queries WHERE id = %s"
-        cursor2.execute(query, (eid))
+        cursor2.execute(query, (eid,))
         summary = cursor2.fetchone()
         cursor2.close()
         if summary:
@@ -151,12 +185,13 @@ def get_summary(paper_link):
     else:
         return "error: Paper not in Graph", 404
     
-@app.route("/citation/<paper_link>")
+@app.route("/citation/<path:paper_link>")
 def get_citation(paper_link):
+    paper_link = urllib.parse.unquote(paper_link)
     query_type = request.args.get('style')
     cursor = db.cursor(dictionary=True)
-    query = "SELECT * FROM graph-entries WHERE link = %s"
-    cursor.execute(query, (paper_link))
+    query = "SELECT * FROM `graph-entries` WHERE link = %s"
+    cursor.execute(query, (paper_link,))
     eid = cursor.fetchone()
     newid = eid['id']
     cursor.close()
@@ -249,18 +284,6 @@ def update_user():
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True)
-    cursor = db.cursor()
-    query1 = "SELECT content FROM graph WHERE id=1"
-    cursor.execute(query1)
-    graph_data = cursor.fetchone()
-    cursor.close()
-    cursor2 = db.cursor()
-    query2 = "SELECT content FROM graph WHERE id=2"
-    cursor2.execute(query2)
-    scores_data = cursor2.fetchone()
-    global maingraph
-    maingraph = Graph(graph=json.loads(graph_data), scores=json.loads(scores_data))
-    if db.is_connected():
-        print("connected successfuly")
     #NEED TO ADD connections.close on exit
+    app.run(debug=True)
+    
