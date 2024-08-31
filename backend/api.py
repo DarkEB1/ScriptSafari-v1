@@ -58,89 +58,124 @@ def add_paper(paper_link):
     paper_link = urllib.parse.unquote(paper_link)
     article_data = scrape(paper_link)
     print(article_data)
+
     if article_data["title"]:
-        cursor = db.cursor(dictionary=True)
-        query = "SELECT * FROM `graph-entries` WHERE title = %s"
-        cursor.execute(query, (article_data["title"],))
-        exists = cursor.fetchone()
-        cursor.close()
-        if exists:
-            return jsonify({"error": "Node already in graph"}), 404
-        else:
-            graphcursor = db.cursor()
-            authors_list = article_data["authors"]
-            affiliations_list = article_data["affiliations"]
-            query = """
-            SELECT title 
-            FROM `graph-entries`
-            WHERE journal_name = %s 
-            OR authors LIKE %s
-            OR affiliations LIKE %s
-            """
-            like_authors_pattern = '%' + '%'.join(authors_list) + '%'
-            like_affiliations_pattern = '%' + '%'.join(affiliations_list) + '%'
-            try:
-                graphcursor.execute(query, (article_data["journal_name"], like_authors_pattern, like_affiliations_pattern))
-                connected_titles = [row[0] for row in graphcursor.fetchall()]
-            except mysql.connector.Error as err:
-                print(f"Error: {err}")
-                connected_titles = []
-            print(connected_titles)
-            graphcursor.close()
-            maingraph.firstsetscore(article_data["title"])
-            maingraph.add(article_data["title"], connection=None)
-            for connection in connected_titles:
-                maingraph.add(article_data["title"], connection)
-            ucursor = db.cursor()
-            uquery = "SELECT uid FROM users WHERE email = %s"
-            ucursor.execute(uquery, (user,))
-            uid = ucursor.fetchone()
-            ucursor.close()
-            uid = uid[0]
-            cursor2 = db.cursor(dictionary=True)
-            query = "INSERT INTO `graph-entries` (uid, link, title, authors, affiliations, publication_date, journal_name, journal_volume, journal_pages, doi) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
-            cursor2.execute(query, (uid, paper_link, article_data["title"], str(article_data["authors"]), str(article_data["affiliations"]), article_data["publication_date"], article_data["journal_name"], article_data["journal_volume"], article_data["journal_pages"], article_data["doi"]))
-            db.commit()
-            print(maingraph.graph())
-            score = defaultscore(article_data, maingraph, db) #written to database within that program
-            print('Sc'+str(score))
-            finalcursor = db.cursor()
-            print("G"+str(maingraph.graph()))
-            print("S"+str(maingraph.scores()))
-            finalquery = "UPDATE graph SET content = %s WHERE cid = 1"
-            data = str(maingraph.graph())
-            finalcursor.execute(finalquery, (data,))
-            finalquery = "UPDATE graph SET content = %s WHERE cid = 2"
-            data2 = str(maingraph.scores())
-            finalcursor.execute(finalquery, (data2,))
-            db.commit()
-            finalcursor.close()
-            processed = {
-                "uid": uid,
-                "link": paper_link,
-                "title": article_data["title"],
-                "authors": article_data["authors"],
-                "affiliations": article_data["affiliations"],
-                "publication_date": article_data["publication_date"],
-                "journal": article_data["journal_name"],
-                "journal_volume": article_data["journal_volume"],
-                "journal_pages": article_data["journal_pages"],
-                "doi": article_data["doi"],
-                "score": score,
-            }
-            idcursor = db.cursor()
-            idquery = "SELECT id FROM `graph-entries` WHERE title=%s"
-            idcursor.execute(idquery, (article_data["title"],))
-            pid = idcursor.fetchone()
-            idcursor.close()
-            qcursor = db.cursor()
-            qquery = "INSERT INTO queries (id) VALUES (%s)"
-            qcursor.execute(qquery, (pid[0],))
-            db.commit()
-            qcursor.close()
-            return jsonify(processed), 200
+        try:
+            db.start_transaction()
+
+            cursor = db.cursor(dictionary=True)
+            query = "SELECT * FROM `graph-entries` WHERE title = %s"
+            cursor.execute(query, (article_data["title"],))
+            exists = cursor.fetchone()
+            cursor.close()
+
+            if exists:
+                return jsonify({"error": "Node already in graph"}), 404
+            else:
+                graphcursor = db.cursor()
+                authors_list = article_data["authors"]
+                affiliations_list = article_data["affiliations"]
+                query = """
+                SELECT title 
+                FROM `graph-entries`
+                WHERE journal_name = %s 
+                OR authors LIKE %s
+                OR affiliations LIKE %s
+                """
+                like_authors_pattern = '%' + '%'.join(authors_list) + '%'
+                like_affiliations_pattern = '%' + '%'.join(affiliations_list) + '%'
+                try:
+                    graphcursor.execute(query, (article_data["journal_name"], like_authors_pattern, like_affiliations_pattern))
+                    connected_titles = [row[0] for row in graphcursor.fetchall()]
+                except mysql.connector.Error as err:
+                    print(f"Error: {err}")
+                    connected_titles = []
+                print(connected_titles)
+                graphcursor.close()
+
+                maingraph.firstsetscore(article_data["title"])
+                maingraph.add(article_data["title"], connection=None)
+                for connection in connected_titles:
+                    maingraph.add(article_data["title"], connection)
+
+                ucursor = db.cursor()
+                uquery = "SELECT uid FROM users WHERE email = %s"
+                ucursor.execute(uquery, (user,))
+                uid = ucursor.fetchone()
+                ucursor.close()
+                uid = uid[0]
+
+                cursor2 = db.cursor(dictionary=True)
+                query = """INSERT INTO `graph-entries` 
+                           (uid, link, title, authors, affiliations, publication_date, journal_name, journal_volume, journal_pages, doi) 
+                           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
+                cursor2.execute(query, (uid, paper_link, article_data["title"], 
+                                        str(article_data["authors"]), str(article_data["affiliations"]),
+                                        article_data["publication_date"], article_data["journal_name"], 
+                                        article_data["journal_volume"], article_data["journal_pages"], 
+                                        article_data["doi"]))
+                print(maingraph.graph())
+                score = defaultscore(article_data, maingraph, db)  # written to database within that program
+                print('Sc'+str(score))
+                finalcursor = db.cursor()
+                print("G"+str(maingraph.graph()))
+                print("S"+str(maingraph.scores()))
+                finalquery = "UPDATE graph SET content = %s WHERE cid = 1"
+                data = str(maingraph.graph())
+                finalcursor.execute(finalquery, (data,))
+                finalquery = "UPDATE graph SET content = %s WHERE cid = 2"
+                data2 = str(maingraph.scores())
+                finalcursor.execute(finalquery, (data2,))
+                finalcursor.close()
+                processed = {
+                    "uid": uid,
+                    "link": paper_link,
+                    "title": article_data["title"],
+                    "authors": article_data["authors"],
+                    "affiliations": article_data["affiliations"],
+                    "publication_date": article_data["publication_date"],
+                    "journal": article_data["journal_name"],
+                    "journal_volume": article_data["journal_volume"],
+                    "journal_pages": article_data["journal_pages"],
+                    "doi": article_data["doi"],
+                    "score": score,
+                }
+                idcursor = db.cursor()
+                idquery = "SELECT id FROM `graph-entries` WHERE title=%s"
+                idcursor.execute(idquery, (article_data["title"],))
+                pid = idcursor.fetchone()
+                idcursor.close()
+                qcursor = db.cursor()
+                qquery = "INSERT INTO queries (id) VALUES (%s)"
+                qcursor.execute(qquery, (pid[0],))
+                db.commit()
+                qcursor.close()
+                db.commit()
+
+                return jsonify(processed), 200
+
+        except Exception as e:
+            db.rollback()
+            print(f"Transaction failed: {e}")
+            return jsonify({"error": "An error occurred while processing the paper"}), 500
+
+        finally:
+            cursor.close()
+            if 'graphcursor' in locals():
+                graphcursor.close()
+            if 'ucursor' in locals():
+                ucursor.close()
+            if 'cursor2' in locals():
+                cursor2.close()
+            if 'finalcursor' in locals():
+                finalcursor.close()
+            if 'idcursor' in locals():
+                idcursor.close()
+            if 'qcursor' in locals():
+                qcursor.close()
     else:
         return jsonify({"error": "Paper not found"}), 404
+
 
 @app.route('/graph')
 def graph_display():

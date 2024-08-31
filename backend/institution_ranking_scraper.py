@@ -42,8 +42,11 @@ def parse_institution_string(institution_str):
 def fetch_institution_rank(institution: str) -> int:
     rank = 0 
     out = parse_institution_string(institution)
-    institution = out["institution"]
-    institution2 = out["city"]
+    if out:
+        institution = out["institution"]
+        institution2 = out["city"]
+    else:
+        institution2 = institution
     with open('/workspaces/ScriptSafari-v1/backend/institutions.csv', "r") as rank_list:
         csv_reader = csv.reader(rank_list)
         for line in csv_reader:
