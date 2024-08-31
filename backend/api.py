@@ -16,6 +16,7 @@ from reputational_score import *
 from graph import *
 from citation_generator import *
 from summary_generator import *
+from author_info_scraper import *
 
 app = Flask(__name__)
 CORS(app)
@@ -137,7 +138,7 @@ def get_summary(paper_link):
             return summary['summary'], 200
         else:
             summary = Summary_gen(paper_link)
-            cursor3 = queriesdb.cursor()
+            cursor3 = db.cursor()
             query = """
                 UPDATE queries
                 SET summary = %s

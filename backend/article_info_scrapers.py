@@ -217,5 +217,3 @@ def scrape(url):
     else:
         print("Failed to scrape the article. Enter Manually?")
 
-
-print(scrape('https://arxiv.org/abs/cond-mat/0102536'))
