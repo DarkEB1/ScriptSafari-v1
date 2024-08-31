@@ -23,17 +23,34 @@ class Summary_gen:
     @outputs str.response:fetched summary
     """
     def generate_summary(self) -> str:
-        response = self.client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "You are a helpful academic research assistant."},
-                {"role": "user", "content": f"Summarize the following academic paper:\n\n{self.request}"}
-            ],
-            max_tokens=200
-        )
-        print(response)
-        self.summary = response['choices'][0]['message']['content'].strip()
-        return self.summary
+        max_retries = 5 
+        delay = 2 
+        for attempt in range(max_retries):
+            try:
+                response = self.client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=[
+                        {"role": "system", "content": "You are a helpful academic research assistant."},
+                        {"role": "user", "content": f"Summarize the following academic paper:\n\n{self.request}"}
+                    ],
+                    max_tokens=400
+                )
+                print(response)
+                self.summary = response.choices[0].message.content.strip()
+                return self.summary
+            except openai.error.RateLimitError as e:
+                print(f"Rate limit exceeded: {e}")
+                if attempt < max_retries - 1:
+                    print(f"Retrying in {delay} seconds...")
+                    time.sleep(delay)
+                    delay *= 2 
+                else:
+                    return "Rate limit exceeded. Please try again later."
+            except openai.error.OpenAIError as e:
+                print(f"An error occurred: {e}")
+                return "An error occurred. Please try again later."
+
+        return "Failed to generate summary after multiple attempts due to rate limiting."
     
     def fetch_sum(self):
         if validators.url(self.request):

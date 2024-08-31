@@ -23,8 +23,8 @@ app = Flask(__name__)
 CORS(app)
 global db
 db = mysql.connector.connect(
-    host="0.tcp.eu.ngrok.io",  # ngrok host
-    port= 19605,                # ngrok port
+    host="7.tcp.eu.ngrok.io",  # ngrok host
+    port= 16141,                # ngrok port
     user="root",               
     password="",               
     database="scriptsafariv1"    
