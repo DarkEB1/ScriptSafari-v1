@@ -2,6 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 import json
 import re
+import requests
 import xml.etree.ElementTree as et
 
 def get_soup(url)  -> object:
@@ -122,14 +123,15 @@ def doi_scrape(doi) -> dict:
         raw = response.json()
         authors = [author['family'] + ", " + author.get('given', '') for author in raw.get("author", [])]
         affiliations = [
-            [aff['name'] for aff in author.get('affiliation', [])]
+            aff['name']
             for author in raw.get("author", [])
-            ]
+            for aff in author.get('affiliation', [])
+        ]
         attributes = {
             "title": raw.get('title'),
             "authors": authors,
             "affiliations": affiliations,
-            "publication_date": raw.get("issued").get("date-parts")[0] if raw.get("issued") else "N/A",
+            "publication_date": (raw.get("issued").get("date-parts")[0])[0] if raw.get("issued") else "N/A",
             "journal_name": raw.get('container-title'),
             "journal_volume": raw.get('volume'),
             "journal_pages": raw.get('page'),
@@ -139,8 +141,7 @@ def doi_scrape(doi) -> dict:
     else:
         return None
 
-import requests
-import xml.etree.ElementTree as et
+
 
 def arxiv_scrape(arxiv_id: str) -> dict:
     arxiv_url = f"http://export.arxiv.org/api/query?id_list={arxiv_id}"
@@ -150,6 +151,7 @@ def arxiv_scrape(arxiv_id: str) -> dict:
         root = et.fromstring(response.content)
         entry = root.find("{http://www.w3.org/2005/Atom}entry")
         authors = []
+        affiliations = []
         
         title = entry.find(".//{http://www.w3.org/2005/Atom}title").text.strip()
         
@@ -159,10 +161,8 @@ def arxiv_scrape(arxiv_id: str) -> dict:
         for author in root.findall(".//{http://www.w3.org/2005/Atom}author"):
             name = author.find("{http://www.w3.org/2005/Atom}name").text
             affiliation = author.find("{http://arxiv.org/schemas/atom}affiliation")
-            authors.append({
-                "name": name,
-                "affiliation": affiliation.text if affiliation is not None else None
-            })
+            authors.append(name)
+            affiliations.append(affiliation.text if affiliation is not None else None)
 
         doi = root.find(".//{http://arxiv.org/schemas/atom}doi")
         doi = doi.text if doi is not None else None
@@ -184,6 +184,7 @@ def arxiv_scrape(arxiv_id: str) -> dict:
         attributes = {
             "title": title,
             "authors": authors,
+            "affiliations": affiliations,
             "publication_year": publication_year,
             "journal_name": journal_name,
             "journal_volume": journal_volume,
@@ -215,3 +216,6 @@ def scrape(url):
         print(json.dumps(article_data, indent=2))
     else:
         print("Failed to scrape the article. Enter Manually?")
+
+
+print(scrape('https://arxiv.org/abs/cond-mat/0102536'))

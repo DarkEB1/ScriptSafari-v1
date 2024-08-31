@@ -27,11 +27,77 @@ def home():
 
 @app.route('/add-paper/<paper_link>')
 def add_paper(paper_link):
+    user = request.args.get('email')
     article_data = scrape(paper_link)
     if article_data["title"]:
-        #add node to graph with repscore of 0, add all edges, if added to graph, add to database
-        score = defaultscore(article_data, maingraph) #written to database within that program
-        #return success, store score, all article data, add ID stored to queries database with all null fields
+        cursor = db.cursor(dictionary=True)
+        query = "SELECT * FROM graph-entries WHERE title = %s"
+        cursor.execute(query, (article_data["title"]))
+        exists = cursor.fetchone()
+        cursor.close()
+        if exists:
+            return jsonify({"error": "Node already in graph"}), 404
+        else:
+            graphcursor = db.cursor()
+            authors_list = eval(article_data["auhors"])
+            affiliations_list = eval(article_data["affiliations"])
+            query = """
+            SELECT title 
+            FROM graph-entries
+            WHERE journal_name = %s 
+            OR authors LIKE %s
+            OR affiliations LIKE %s
+            """
+            like_authors_pattern = '%' + '%'.join(authors_list) + '%'
+            like_affiliations_pattern = '%' + '%'.join(affiliations_list) + '%'
+            graphcursor.execute(query, (article_data["title"], like_authors_pattern, like_affiliations_pattern))
+            connected_titles = [row[0] for row in cursor.fetchall()]
+            graphcursor.close()
+            maingraph.firstsetscore(article_data["title"])
+            for connection in connected_titles:
+                maingraph.add(article_data["title"], connection)
+            ucursor = db.cursor()
+            uquery = "SELECT uid FROM users WHERE email = %s"
+            ucursor.execute(uquery, (user))
+            uid = cursor.fetchone()
+            ucursor.close()
+            cursor2 = db.cursor(dictionary=True)
+            query = "INSERT INTO graph-entries (uid, link, title, authors, affiliations, publication_date, journal_name, journal_volume, journal_pages, doi) VALUES %s, %s, %s, %s, %s, %s, %s, %s, %s, %s"
+            cursor2.execute(query, (uid, paper_link, article_data["title"], article_data["authors"], article_data["affiliations"], article_data["publication_date"], article_data["journal_name"], article_data["journal_volume"], article_data["journal_pages"], article_data["doi"]))
+            db.commit()
+            cursor2.close()
+            score = defaultscore(article_data, maingraph) #written to database within that program
+            finalcursor = db.cursor()
+            finalquery = "UPDATE graph SET content = %s WHERE id = 1"
+            finalcursor.execute(finalquery, (maingraph.graph()))
+            finalquery = "UPDATE graph SET content = %s WHERE id = 2"
+            finalcursor.execute(finalquery, (maingraph.scores()))
+            db.commit()
+            finalcursor.close()
+            processed = {
+                "uid": uid,
+                "link": paper_link,
+                "title": article_data["title"],
+                "title": article_data["authors"],
+                "title": article_data["affiliations"],
+                "title": article_data["publication_date"],
+                "title": article_data["journal_name"],
+                "title": article_data["journal_volume"],
+                "title": article_data["journal_pages"],
+                "title": article_data["doi"],
+                "score": score,
+            }
+            idcursor = db.cursor()
+            idquery = "SELECT id FROM graph-entries WHERE title=%s"
+            idcursor.execute(idquery, (article_data["title"]))
+            pid = idcursor.fetchone()
+            idcursor.close()
+            qcursor = db.cursor()
+            qquery = "INSERT INTO queries (id) VALUES %s"
+            qcursor.execute(qquery, (pid))
+            db.commit()
+            qcursor.close()
+            return jsonify(processed), 200
     else:
         return jsonify({"error": "Paper not found"}), 404
 

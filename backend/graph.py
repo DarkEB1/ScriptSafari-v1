@@ -9,8 +9,14 @@ class Graph(object):
     def resume_graph(self, graph):
         self._graph = graph
 
+    def firstsetscore(self, title):
+        self._scores[title] = 0
+
     def graph(self):
         return self._graph
+    
+    def scores(self):
+        return self._scores
 
     def fetch_score(self, paper):
         try:
