@@ -40,7 +40,6 @@ function App() {
           <Route path="/" element={<ProtectedRoute component={<Home />} />} />
           <Route path="/reputation" element={<ProtectedRoute component={<Reputation />} />} />
           <Route path="/profile" element={<ProtectedRoute component={<Profile />} />} />
-          <Route path="/admin" element={<ProtectedRoute component={<Admin />} />} />
           <Route path="/citations" element={<ProtectedRoute component={<Citations />} />} />
           <Route path="/summary" element={<ProtectedRoute component={<Summary />} />} />
         </Routes>
