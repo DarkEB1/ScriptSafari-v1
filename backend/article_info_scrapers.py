@@ -3,6 +3,7 @@ from bs4 import BeautifulSoup
 import json
 import re
 import requests
+import unicodedata
 import xml.etree.ElementTree as et
 
 def get_soup(url)  -> object:
@@ -196,8 +197,9 @@ def arxiv_scrape(arxiv_id: str) -> dict:
     else:
         return None
 
-def clean_affiliation(affiliation) -> str:
+import re
 
+def clean_affiliations(affiliations) -> list:
     patterns = [
         r'.*?(University of [^,]+)',      
         r'.*?(Institute of [^,]+)',        
@@ -222,13 +224,26 @@ def clean_affiliation(affiliation) -> str:
         r'.*?([A-Za-z\s]+ Clinic)',          
     ]
     
-    for pattern in patterns:
-        match = re.search(pattern, affiliation)
-        if match:
-            return match.group(1).strip()
+    cleaned_affiliations = []
     
-    # If no patterns matched, return the original string
-    return affiliation.strip()
+    for affiliation in affiliations:
+        cleaned = affiliation.strip()
+        for pattern in patterns:
+            match = re.search(pattern, cleaned)
+            if match:
+                cleaned = match.group(1).strip()
+                break
+        cleaned_affiliations.append(cleaned)
+    
+    return cleaned_affiliations
+
+def title_clean(title) -> str:
+    title = unicodedata.normalize('NFKD', title).encode('ascii', 'ignore').decode('ascii')
+    title = re.sub(r'[^\w\s-]', '', title)
+    title = re.sub(r'[-\s]+', ' ', title)
+    title = title.strip()
+    
+    return title
 
 def scrape(url):
     doi = extract_doi(url)
@@ -247,7 +262,9 @@ def scrape(url):
 
     if article_data:
         aff = article_data["affiliations"]
-        article_data["affiliations"] = clean_affiliation(aff)
+        tit = article_data["title"]
+        article_data["affiliations"] = clean_affiliations(aff)
+        article_data["title"] = title_clean(tit)
         return article_data
     else:
         print("Failed to scrape the article. Enter Manually?")

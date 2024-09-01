@@ -23,8 +23,8 @@ app = Flask(__name__)
 CORS(app)
 global db
 db = mysql.connector.connect(
-    host="7.tcp.eu.ngrok.io",  # ngrok host
-    port= 16141,                # ngrok port
+    host="2.tcp.eu.ngrok.io",  # ngrok host
+    port= 11992,                # ngrok port
     user="root",               
     password="",               
     database="scriptsafariv1"    
@@ -160,7 +160,8 @@ def add_paper(paper_link):
             return jsonify({"error": "An error occurred while processing the paper"}), 500
 
         finally:
-            cursor.close()
+            if cursor:
+                cursor.close()
             if 'graphcursor' in locals():
                 graphcursor.close()
             if 'ucursor' in locals():
@@ -254,10 +255,12 @@ def get_citation(paper_link):
         if citation[query_type] != None:
             return citation[query_type], 200
         else:
+            author = ast.literal_eval(eid['authors'])
+            aff = ast.literal_eval(eid['affiliations'])
             paper_attributes = {
                 "title": eid['title'],
-                "author": (eid['authors'])[0],
-                "affiliations": (eid['affiliations'])[0],
+                "author": author[0],
+                "affiliations": aff[0],
                 "date": eid['publication_date'],
                 "journal": eid['journal_name'],
                 "issue": eid['journal_volume'],
