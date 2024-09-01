@@ -25,6 +25,7 @@ class Citation_gen:
                 self.attr[category] = category.upper()
         func = style_function_map.get(self.style)
         if func:
+            citation = func()
             return citation
         else:
             print(f"Invalid style: {self.style}")

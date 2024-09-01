@@ -196,6 +196,39 @@ def arxiv_scrape(arxiv_id: str) -> dict:
     else:
         return None
 
+def clean_affiliation(affiliation) -> str:
+
+    patterns = [
+        r'.*?(University of [^,]+)',      
+        r'.*?(Institute of [^,]+)',        
+        r'.*?([A-Za-z\s]+ College)',        
+        r'.*?([A-Za-z\s]+ University)',     
+        r'.*?([A-Za-z\s]+ Institute)',      
+        r'.*?([A-Za-z\s]+ Institute [^,]+)',  
+        r'.*?(School of [^,]+)',           
+        r'.*?(Faculty of [^,]+)',          
+        r'.*?(National Laboratory of [^,]+)',
+        r'.*?(Laboratory of [^,]+)',        
+        r'.*?(Center for [^,]+)',           
+        r'.*?(Hospital of [^,]+)',          
+        r'.*?([A-Za-z\s]+ Research Institute)', 
+        r'.*?([A-Za-z\s]+ Research Center)', 
+        r'.*?(Medical Center of [^,]+)',    
+        r'.*?([A-Za-z\s]+ Center [^,]+)',    
+        r'.*?(Corporation of [^,]+)',       
+        r'.*?([A-Za-z\s]+ Academy)',      
+        r'.*?([A-Za-z\s]+ Foundation)',      
+        r'.*?([A-Za-z\s]+ Labs?)',          
+        r'.*?([A-Za-z\s]+ Clinic)',          
+    ]
+    
+    for pattern in patterns:
+        match = re.search(pattern, affiliation)
+        if match:
+            return match.group(1).strip()
+    
+    # If no patterns matched, return the original string
+    return affiliation.strip()
 
 def scrape(url):
     doi = extract_doi(url)
@@ -213,6 +246,8 @@ def scrape(url):
             article_data = doi_scrape(article_data["doi"])
 
     if article_data:
+        aff = article_data["affiliations"]
+        article_data["affiliations"] = clean_affiliation(aff)
         return article_data
     else:
         print("Failed to scrape the article. Enter Manually?")
