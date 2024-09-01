@@ -6,7 +6,9 @@ const GraphComponent = () => {
   const [graphData, setGraphData] = useState({ nodes: [], links: [] });
   const [scores, setScores] = useState({});
   const [hoveredNode, setHoveredNode] = useState(null);
-  const [selectedNode, setSelectedNode] = useState(null); // New state for the clicked node
+  const [selectedNode, setSelectedNode] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResult, setSearchResult] = useState(null); // New state for search result
 
   useEffect(() => {
     const fetchGraphData = async () => {
@@ -72,8 +74,8 @@ const GraphComponent = () => {
     link: {
       highlightColor: 'lightblue',
     },
-    width: 600, 
-    height: 500, 
+    width: 600,
+    height: 500,
     directed: false,
   };
 
@@ -94,6 +96,33 @@ const GraphComponent = () => {
     setHoveredNode(nodeId); // Treat click as if it's a permanent hover
   };
 
+  const handleSearch = async () => {
+    try {
+      const response = await fetch(`http://127.0.0.1:5000/get-node/${encodeURIComponent(searchQuery)}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      if (data && data.title) {
+        setSearchResult(data); // Set the search result
+        setSelectedNode(data.title);
+        setHoveredNode(data.title);
+      } else {
+        console.warn('Node not found');
+        setSearchResult(null); // Clear search result if not found
+      }
+    } catch (error) {
+      console.error('Error fetching node data:', error);
+    }
+  };
+
   return (
     <div className="graph-container">
       <Graph
@@ -102,8 +131,33 @@ const GraphComponent = () => {
         config={myConfig}
         onMouseOverNode={onMouseOverNode}
         onMouseOutNode={onMouseOutNode}
-        onClickNode={onClickNode} 
+        onClickNode={onClickNode}
       />
+      <div className="search-container">
+        {searchResult && (
+          <div className="search-result-panel">
+            <div className="info-item">
+              <strong>TITLE:</strong> {searchResult.title}
+            </div>
+            <div className="info-item">
+              <strong>DATE:</strong> {searchResult.publication_date || 'N/A'}
+            </div>
+            <div className="info-item">
+              <strong>AUTHOR:</strong> {searchResult.authors || 'N/A'}
+            </div>
+            <div className='info-item'>
+              <strong>LINK:</strong> <a href={searchResult.link} target="_blank" rel="noopener noreferrer">{searchResult.link}</a>
+            </div>
+          </div>
+        )}
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Enter node title..."
+        />
+        <button onClick={handleSearch}>Search</button>
+      </div>
       {(hoveredNode || selectedNode) && (
         <div className="info-panel">
           <div className="info-item">
