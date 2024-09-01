@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Auth0Provider } from '@auth0/auth0-react';
 import Navbar from './components/Navbar';
@@ -11,7 +11,7 @@ import Profile from './pages/Profile';
 import Citations from './pages/Citations';
 import Summary from './pages/Summary';
 import Admin from './pages/Admin';
-import UserManagement from './hooks/UserManagement';
+
 
 function onRedirectCallback(appState) {
   window.history.replaceState(
@@ -22,10 +22,7 @@ function onRedirectCallback(appState) {
 }
 
 function App() {
-  UserManagement();
-}
 
-function App() {
   return (
     <Router>
       <Auth0Provider

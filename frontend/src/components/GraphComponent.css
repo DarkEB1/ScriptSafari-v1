@@ -1,0 +1,71 @@
+/* Ensure the page container is centered vertically and horizontally */
+.page-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #f0f0f0; 
+  }
+  
+.graph-container {
+    background-color: #efefef;
+    border-radius: 15px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    width: 1000px;
+    min-height: 500px;
+    border: 2px solid #181818;
+    margin-top: 150px;
+    margin-left: 350px;
+  }
+  
+  .info-panel {
+    margin-top: 20px;
+    color: #ffffff;
+    background-color: #1b1b1b;
+    padding: 20px;
+    border-radius: 10px;
+    width: 300px;
+    text-align: left;
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+  }
+  
+  .info-item {
+    margin-bottom: 10px;
+  }
+  
+  .summary-button, .cite-button {
+    background-color: #2d2d2d;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    width: 100%;
+    margin-bottom: 10px;
+    text-align: center;
+  }
+  
+  .summary-button:hover, .cite-button:hover {
+    background-color: #357ab8;
+  }
+  
+  .info-panel-buttons {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .info-panel-buttons .summary-button,
+  .info-panel-buttons .cite-button {
+    margin: 5px 0;
+    width: 100%;
+  }
+  

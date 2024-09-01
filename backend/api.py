@@ -180,7 +180,19 @@ def add_paper(paper_link):
 
 @app.route('/graph')
 def graph_display():
-    return jsonify(maingraph.graph())
+    cursor = db.cursor(dictionary=True)
+    query = "SELECT content FROM graph WHERE cid = 1"
+    cursor.execute(query)
+    graph_data = cursor.fetchone()
+    graph_data = graph_data["content"]
+    cursor.close()
+    cursor2 = db.cursor(dictionary=True)
+    query2 = "SELECT content FROM graph WHERE cid = 2"
+    cursor2.execute(query2)
+    scores = cursor2.fetchone()
+    scores = scores["content"]
+    cursor2.close()
+    return jsonify({"graph": graph_data, "scores": scores})
 
 @app.route("/get-node/<node_title>")
 def get_node(node_title):
@@ -280,31 +292,53 @@ def get_citation(paper_link):
         return "error: Paper not in Graph", 404
 
 
-@app.route("/create-user", methods=["POST"])
+@app.route("/create-user", methods=["OPTIONS", "POST"])
 def create_user():
-    try:
-        data = request.get_json()
-        username = data.get("username")
-        email = data.get("email")
-        password = data.get("password")
-        pfp = data.get("pfp")
+    if request.method == "OPTIONS":
+        print("OPTION SENT")
+        return jsonify({"status": "OK"}), 200
+    else:
+        try:
+            print("LAUNCHED BITCH")
+            data = request.get_json()
+            username = data.get("username")
+            email = data.get("email")
+            password = data.get("password")
+            pfp = data.get("pfp")
 
-        if not all([username, email, password]):
-            return jsonify({"error": "Missing required fields"}), 400
-        
-        cursor = db.cursor()
-        query = "INSERT INTO users (username, email, password, pfp) VALUES (%s, %s, %s, %s)"
-        cursor.execute(query, (username, email, password, pfp))
-        db.commit()
-        cursor.close()
-        return jsonify({"message": "User created successfully"}), 201
+            if not all([username, email, password]):
+                return jsonify({"error": "Missing required fields"}), 400
 
-    except mysql.connector.Error as dberr:
-        db.rollback() 
-        return jsonify({"error": str(dberr)}), 500
+            cursor = db.cursor()
 
-    except Exception as generalerror:
-        return jsonify({"error": str(generalerror)}), 500
+            # Check if the email already exists in the database
+            check_query = "SELECT uid FROM users WHERE email = %s"
+            cursor.execute(check_query, (email,))
+            existing_user = cursor.fetchone()
+            print("Existing user:", existing_user)
+
+            if existing_user:
+                print("Email already exists")
+                cursor.close()
+                return jsonify({"error": "Email already exists"}), 409
+
+            # Insert the new user if the email is not found
+            print("Inserting new user")
+            insert_query = "INSERT INTO users (username, email, password, pfp) VALUES (%s, %s, %s, %s)"
+            cursor.execute(insert_query, (username, email, password, pfp))
+            db.commit()
+            cursor.close()
+            return jsonify({"message": "User created successfully"}), 201
+
+        except mysql.connector.Error as dberr:
+            db.rollback()
+            print(f"MySQL Error: {str(dberr)}")  # Log the MySQL error
+            return jsonify({"error": str(dberr)}), 500
+
+        except Exception as generalerror:
+            print(f"General Error: {str(generalerror)}")  # Log the general error
+            return jsonify({"error": str(generalerror)}), 500
+
 
 @app.route("/update-user", methods=["PUT"])
 def update_user():

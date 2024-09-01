@@ -1,12 +1,19 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth0 } from '@auth0/auth0-react';
+import useUserManagement from './hooks/UserManagement';
 import './Navbar.css';
 
 const Navbar = () => {
-  const { loginWithRedirect, logout, isAuthenticated, isLoading } = useAuth0();
+  const { loginWithRedirect, logout, isAuthenticated, isLoading, user } = useAuth0();
   const location = useLocation();
-  console.log(isAuthenticated)
+
+  console.log(isAuthenticated);
+  console.log(user);
+  if (isAuthenticated!=false){
+    console.log('Triggering API call');
+    useUserManagement({ user, isAuthenticated, isLoading });
+  }
   if (isLoading) {
     return <div>Loading...</div>;
   }
