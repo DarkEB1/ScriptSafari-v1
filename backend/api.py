@@ -51,7 +51,7 @@ if db.is_connected():
 def home():
     return 'ScriptSafari-API-v1'
 
-@app.route('/add-paper/<path:paper_link>')
+@app.route('/add-paper/<path:paper_link>', methods=["POST", "GET"])
 def add_paper(paper_link):
     user = request.args.get('email')
     print(user, paper_link)
@@ -160,8 +160,11 @@ def add_paper(paper_link):
             return jsonify({"error": "An error occurred while processing the paper"}), 500
 
         finally:
-            if cursor:
-                cursor.close()
+            try:
+                if cursor:
+                    cursor.close()
+            except Exception as e:
+                print(e)
             if 'graphcursor' in locals():
                 graphcursor.close()
             if 'ucursor' in locals():
@@ -209,7 +212,31 @@ def get_node(node_title):
             return jsonify({"error": "Node not found"}), 404
     except Exception as e:
         return jsonify({"error": "An error occurred while processing the paper"}), 500
-  
+
+@app.route("/profile/<user>")
+def profile(user):
+    cursor = db.cursor(dictionary=True)
+    query = "SELECT * FROM users WHERE email = %s"
+    cursor.execute(query, (user,))
+    details = cursor.fetchone()
+    cursor.close()
+    if details:
+        return jsonify(details), 200
+    else:
+        return jsonify({"error": "user not found"}), 404
+    
+@app.route("/entries/<uid>")
+def entries(uid):
+    cursor = db.cursor(dictionary=True)
+    query = "SELECT title FROM `graph-entries` WHERE uid = %s"
+    cursor.execute(query, (uid,))
+    details = cursor.fetchone()
+    cursor.close()
+    if details:
+        return jsonify(details), 200
+    else:
+        return jsonify({"error": "user not found"}), 404
+
 @app.route("/summary/<path:paper_link>")
 def get_summary(paper_link):
     paper_link = urllib.parse.unquote(paper_link)
@@ -217,7 +244,10 @@ def get_summary(paper_link):
     query = "SELECT id FROM `graph-entries` WHERE link = %s"
     cursor.execute(query, (paper_link,))
     eid = cursor.fetchone()
-    eid = eid['id']
+    if eid['id']:
+        eid = eid['id']
+    else:
+        eid = None
     cursor.close()
     
     if eid:
@@ -269,10 +299,18 @@ def get_citation(paper_link):
         else:
             author = ast.literal_eval(eid['authors'])
             aff = ast.literal_eval(eid['affiliations'])
+            if aff:
+                aff = aff[0]
+            else:
+                aff = ' '
+            if author:
+                author = author[0]
+            else:
+                author = ' '
             paper_attributes = {
                 "title": eid['title'],
-                "author": author[0],
-                "affiliations": aff[0],
+                "author": author,
+                "affiliations": aff,
                 "date": eid['publication_date'],
                 "journal": eid['journal_name'],
                 "issue": eid['journal_volume'],

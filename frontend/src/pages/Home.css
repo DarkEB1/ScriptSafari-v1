@@ -1,0 +1,27 @@
+.menu-list {
+    list-style-type: none;
+    padding: 0;
+    margin-top: 300px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .menu-list li {
+    margin: 0;
+  }
+  
+  .menu-list a {
+    text-decoration: none;
+    font-size: 180px;
+    font-weight: bold;
+    color: #000;
+    text-transform: uppercase;
+    line-height: 0.6;
+  }
+  
+  .menu-list a:hover,
+  .menu-list a.active {
+    color: #333;
+  }
+  

@@ -13,6 +13,7 @@ const Navbar = () => {
   if (isAuthenticated!=false){
     console.log('Triggering API call');
     useUserManagement({ user, isAuthenticated, isLoading });
+    localStorage.setItem('userEmail', user.email);
   }
   if (isLoading) {
     return <div>Loading...</div>;

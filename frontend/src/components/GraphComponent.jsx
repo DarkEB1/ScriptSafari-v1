@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Graph } from 'react-d3-graph';
-import './GraphComponent.css'; // Assuming you have a CSS file for styling
+import { useNavigate } from 'react-router-dom';
+import './GraphComponent.css'; 
 
 const GraphComponent = () => {
   const [graphData, setGraphData] = useState({ nodes: [], links: [] });
@@ -8,7 +9,9 @@ const GraphComponent = () => {
   const [hoveredNode, setHoveredNode] = useState(null);
   const [selectedNode, setSelectedNode] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchResult, setSearchResult] = useState(null); // New state for search result
+  const [searchResult, setSearchResult] = useState(null); 
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchGraphData = async () => {
@@ -74,9 +77,18 @@ const GraphComponent = () => {
     link: {
       highlightColor: 'lightblue',
     },
-    width: 600,
+    width: 800,
     height: 500,
     directed: false,
+    automaticRearrangeAfterDropNode: true,
+    d3: {
+      gravity: -250, 
+      linkLength: 120,
+      linkStrength: 0.1,
+    },
+    panAndZoom: true,
+    maxZoom: 2,
+    minZoom: 0.5,
   };
 
   const onMouseOverNode = (nodeId) => {
@@ -94,6 +106,7 @@ const GraphComponent = () => {
   const onClickNode = (nodeId) => {
     setSelectedNode(nodeId);
     setHoveredNode(nodeId); // Treat click as if it's a permanent hover
+    setSearchResult(null)
   };
 
   const handleSearch = async () => {
@@ -111,18 +124,75 @@ const GraphComponent = () => {
 
       const data = await response.json();
       if (data && data.title) {
-        setSearchResult(data); // Set the search result
+        setSearchResult(data); 
         setSelectedNode(data.title);
         setHoveredNode(data.title);
       } else {
         console.warn('Node not found');
-        setSearchResult(null); // Clear search result if not found
+        setSearchResult(null); 
       }
     } catch (error) {
       console.error('Error fetching node data:', error);
     }
   };
 
+  const handleCitationClick = async () => {
+    if (selectedNode) {
+      setSearchQuery(selectedNode)
+      console.log(selectedNode)
+      try {
+        const response = await fetch(`http://127.0.0.1:5000/get-node/${encodeURIComponent(searchQuery)}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+  
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+  
+        const data = await response.json();
+        if (data && data.link) {
+          navigate('/citations', { state: { node: data.link } });
+        } else {
+          console.warn('Node not found');
+          setSearchResult(null); 
+        }
+      } catch (error) {
+        console.error('Error fetching node data:', error);
+      }
+    }
+  };
+
+  const handleSummaryClick = async () => {
+    if (selectedNode) {
+      setSearchQuery(selectedNode)
+      try {
+        const response = await fetch(`http://127.0.0.1:5000/get-node/${encodeURIComponent(searchQuery)}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+  
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+  
+        const data = await response.json();
+        if (data && data.link) {
+          navigate('/summary', { state: { node: data.link } });
+        } else {
+          console.warn('Node not found');
+          setSearchResult(null); 
+        }
+      } catch (error) {
+        console.error('Error fetching node data:', error);
+      }
+      
+    }
+  };
   return (
     <div className="graph-container">
       <Graph
@@ -146,7 +216,7 @@ const GraphComponent = () => {
               <strong>AUTHOR:</strong> {searchResult.authors || 'N/A'}
             </div>
             <div className='info-item'>
-              <strong>LINK:</strong> <a href={searchResult.link} target="_blank" rel="noopener noreferrer">{searchResult.link}</a>
+              <strong>LINK:</strong> <a href={searchResult.link} target="_blank" rel="noopener noreferrer">link</a>
             </div>
           </div>
         )}
@@ -166,8 +236,8 @@ const GraphComponent = () => {
           <div className="info-item">
             <strong>REPUTATION:</strong> {scores[hoveredNode || selectedNode] || 'N/A'}
           </div>
-          <button className="summary-button">CITE</button>
-          <button className="summary-button">SUMMARIZE</button>
+          <button className="summary-button" onClick={handleCitationClick}>CITE</button>
+          <button className="summary-button" onClick={handleSummaryClick}>SUMMARIZE</button>
         </div>
       )}
     </div>

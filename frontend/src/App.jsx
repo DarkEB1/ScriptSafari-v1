@@ -22,7 +22,9 @@ function onRedirectCallback(appState) {
 }
 
 function App() {
-
+  window.addEventListener('beforeunload', () => {
+    localStorage.removeItem('userEmail');
+  });
   return (
     <Router>
       <Auth0Provider
