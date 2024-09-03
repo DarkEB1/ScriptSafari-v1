@@ -10,7 +10,6 @@ import Reputation from './pages/Reputation';
 import Profile from './pages/Profile';
 import Citations from './pages/Citations';
 import Summary from './pages/Summary';
-import Admin from './pages/Admin';
 
 
 function onRedirectCallback(appState) {
