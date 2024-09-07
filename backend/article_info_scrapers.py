@@ -6,6 +6,7 @@ import requests
 import unicodedata
 import xml.etree.ElementTree as et
 
+#Return beautifulsoup object if url exists and can be retrieved
 def get_soup(url)  -> object:
     try:
         response = requests.get(url)
@@ -15,7 +16,7 @@ def get_soup(url)  -> object:
         print(f"Error fetching the URL: {er}")
         return None
 
-#meta tag scraping
+#meta tag scraping, fetch meta tag by info associated to it in bs4 object
 def extract_meta_content(soup, name=None, property=None) -> str:
     if name:
         meta_tag = soup.find("meta", {"name": name})
@@ -25,6 +26,7 @@ def extract_meta_content(soup, name=None, property=None) -> str:
         return meta_tag.get("content")
     return None
 
+#Scraper called if nothing else works, attempts to retrieve information from bs4 object by scraping by common names and meta tags, if none, tries to find JSON LD object and retrieve information from here
 def generic_scrape(url) -> dict:
     soup = get_soup(url)
     if not soup:
@@ -99,6 +101,7 @@ def generic_scrape(url) -> dict:
     }
     return attributes
 
+#Regex check for doi format, including numbers, fullstop, and alphanumeric
 def extract_doi(url) -> str:
     doi_pattern = re.compile(r'10\.\d{4,9}/[-._;()/:A-Z0-9]+', re.IGNORECASE)
     match = doi_pattern.search(url)
@@ -107,6 +110,7 @@ def extract_doi(url) -> str:
     else:
         return None
 
+#Regex pattern match for arxiv strings anywhere in the url
 def arxiv_match(url: str) -> str:
     arxiv_pattern = re.compile(r'https?://(www\.)?arxiv\.org/(abs|pdf)/([a-z\-]+/[0-9]{7}|[0-9]+\.[0-9]+)(\.pdf)?', re.IGNORECASE)
     match = re.match(arxiv_pattern, url)
@@ -114,6 +118,7 @@ def arxiv_match(url: str) -> str:
         return match.group(3)
     return None
 
+#DOI scraper if doi has been matched, using doi api which returns set fields
 def doi_scrape(doi) -> dict:
     header = {
         "Accept": "application/vnd.citationstyles.csl+json"
@@ -142,8 +147,7 @@ def doi_scrape(doi) -> dict:
     else:
         return None
 
-
-
+# Scrape from arxiv api if arxiv has been matched, use root.find and findall with fields to find attributes
 def arxiv_scrape(arxiv_id: str) -> dict:
     arxiv_url = f"http://export.arxiv.org/api/query?id_list={arxiv_id}"
     response = requests.get(arxiv_url)
@@ -197,8 +201,7 @@ def arxiv_scrape(arxiv_id: str) -> dict:
     else:
         return None
 
-import re
-
+#If affiliations have been returned, match them to a few given patterns to try and retrieve just the name, rather than postcode , country etc (useful for matching to institution rankings later)
 def clean_affiliations(affiliations) -> list:
     patterns = [
         r'.*?(University of [^,]+)',      
@@ -237,6 +240,7 @@ def clean_affiliations(affiliations) -> list:
     
     return cleaned_affiliations
 
+#Clean title, remove non unicode characters, return cleaned title
 def title_clean(title) -> str:
     title = unicodedata.normalize('NFKD', title).encode('ascii', 'ignore').decode('ascii')
     title = re.sub(r'[^\w\s-]', '', title)
@@ -245,6 +249,7 @@ def title_clean(title) -> str:
     
     return title
 
+#Main scraping function, call scrapers in order, if info found, return this info and exit without any more calls
 def scrape(url):
     doi = extract_doi(url)
     arxiv = arxiv_match(url)

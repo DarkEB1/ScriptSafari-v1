@@ -1,7 +1,8 @@
 #https://stackoverflow.com/questions/19472530/representing-graphs-data-structure-in-python
-from collections import defaultdict
 
+#Graph to store scores and graph connections object with graph operations, stores graph as dict and performs operations on it
 class Graph(object):
+    #Initialise graph object and set scores
     def __init__(self, graph, scores):
         if graph is None:
             graph = {}

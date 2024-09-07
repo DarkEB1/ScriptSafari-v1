@@ -23,7 +23,7 @@ def defaultscore(articleinfo, maingraph, db):
     authortopscore = cursor.fetchone()
     cursor.close()
     authortopscore = int(authortopscore[0])
-    journalscore = (fetch_journal_rank(journal)/29166)*100
+    journalscore = ((1-(fetch_journal_rank(journal)))/29166)*100
     print("journalscore"+str(journalscore))
     for author in authors:
         cits = fetch_author_citations(author) or 0
@@ -40,7 +40,7 @@ def defaultscore(articleinfo, maingraph, db):
     tot_auth_score = tot_auth_score/len(authors) or 0
     print("authorscore"+str(tot_auth_score))
     for affiliation in affiliations:
-        tot_aff_score += (fetch_institution_rank(affiliation)/9055)*100
+        tot_aff_score += ((1-(fetch_institution_rank(affiliation)))/9055)*100
     if len(affiliations)==0:
         tot_aff_score = 0
     else:

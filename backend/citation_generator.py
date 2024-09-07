@@ -12,7 +12,7 @@ class Citation_gen:
         self.attr = scraped_attributes
         self.link = link
         
-
+    #Map input from frontend to function in selected style, concatenate scarped info to form citation in given style
     def generate_citation(self) -> str:
         style_function_map = {
             'apa': self.apa,

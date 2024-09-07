@@ -1,12 +1,3 @@
-"""
-Graph display - return graph
-Add paper - (link) scrape, reputation, add to graph, return score, individual scores, graph, store link+attributes in table
-Generate summary - (link) summary
-Generate citation - (link, type) check for attributes in db, citation
-Fetch paper information - (title) query graph
-"""
-
-#TODO ADD TRY EXCEPT TO EACH ENDPOINT
 import mysql.connector
 from flask import Flask, request, jsonify
 from flask_cors import CORS
@@ -19,6 +10,11 @@ from summary_generator import *
 from author_info_scraper import *
 import urllib
 
+"""
+Initialization function
+- Connect api to database via ngrok (or other)
+- Initialize graph with info from database
+"""
 app = Flask(__name__)
 CORS(app)
 global db
@@ -47,10 +43,17 @@ print(maingraph)
 if db.is_connected():
     print("connected successfuly")
 
+"""
+Root endpoint, retun app name
+"""
 @app.route("/")
 def home():
     return 'ScriptSafari-API-v1'
 
+"""
+Function to retreive paper details from link by calling scraping bots, then generates reputational score and write to databse
+Takes paper link as input
+"""
 @app.route('/add-paper/<path:paper_link>', methods=["POST", "GET"])
 def add_paper(paper_link):
     user = request.args.get('email')
@@ -180,7 +183,9 @@ def add_paper(paper_link):
     else:
         return jsonify({"error": "Paper not found"}), 404
 
-
+"""
+Returns graph content, connections and score
+"""
 @app.route('/graph')
 def graph_display():
     cursor = db.cursor(dictionary=True)
@@ -197,6 +202,9 @@ def graph_display():
     cursor2.close()
     return jsonify({"graph": graph_data, "scores": scores})
 
+"""
+Retrieve node information from graph, return this as a json object
+"""
 @app.route("/get-node/<node_title>")
 def get_node(node_title):
     try:
@@ -213,6 +221,9 @@ def get_node(node_title):
     except Exception as e:
         return jsonify({"error": "An error occurred while processing the paper"}), 500
 
+"""
+Retrieve profile info for currently logged user and return as a json object
+"""
 @app.route("/profile/<user>")
 def profile(user):
     cursor = db.cursor(dictionary=True)
@@ -224,7 +235,10 @@ def profile(user):
         return jsonify(details), 200
     else:
         return jsonify({"error": "user not found"}), 404
-    
+
+"""
+Return graph queries information for given user, as a json object
+"""
 @app.route("/entries/<uid>")
 def entries(uid):
     cursor = db.cursor(dictionary=True)
@@ -237,6 +251,10 @@ def entries(uid):
     else:
         return jsonify({"error": "user not found"}), 404
 
+"""
+Call summary function for passed link, return value and write to queries database under the id of this request
+If not in graph, ask user to add paper before requesting summary
+"""
 @app.route("/summary/<path:paper_link>")
 def get_summary(paper_link):
     paper_link = urllib.parse.unquote(paper_link)
@@ -272,6 +290,10 @@ def get_summary(paper_link):
     else:
         return "error: Paper not in Graph", 404
     
+"""
+Call citation function on passed link, return value and write to queries database under the id of this request
+If not in graph, ask user to add paper before requesting citation
+"""
 @app.route("/citation/<path:paper_link>")
 def get_citation(paper_link):
     paper_link = urllib.parse.unquote(paper_link)
@@ -329,7 +351,9 @@ def get_citation(paper_link):
     else:
         return "error: Paper not in Graph", 404
 
-
+"""
+Create user profile in database if not already written, takes json object in request as user details
+"""
 @app.route("/create-user", methods=["OPTIONS", "POST"])
 def create_user():
     if request.method == "OPTIONS":
@@ -337,7 +361,6 @@ def create_user():
         return jsonify({"status": "OK"}), 200
     else:
         try:
-            print("LAUNCHED BITCH")
             data = request.get_json()
             username = data.get("username")
             email = data.get("email")
@@ -370,14 +393,16 @@ def create_user():
 
         except mysql.connector.Error as dberr:
             db.rollback()
-            print(f"MySQL Error: {str(dberr)}")  # Log the MySQL error
+            print(f"MySQL Error: {str(dberr)}") 
             return jsonify({"error": str(dberr)}), 500
 
         except Exception as generalerror:
-            print(f"General Error: {str(generalerror)}")  # Log the general error
+            print(f"General Error: {str(generalerror)}")  
             return jsonify({"error": str(generalerror)}), 500
 
-
+"""
+If user already in database as above, call the update function to rewrite database fields and update them in the table based on whether the user has modified their creds
+"""
 @app.route("/update-user", methods=["PUT"])
 def update_user():
     try:
