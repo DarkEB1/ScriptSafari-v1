@@ -7,7 +7,7 @@ const Profilecomp = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    useEffect(() => {
+    useEffect(() => {//Fetch profile details using email from local storage if there is an email
         if (email) {
             fetch(`http://127.0.0.1:5000/profile/${encodeURIComponent(email)}`)
                 .then(response => {
@@ -40,7 +40,7 @@ const Profilecomp = () => {
     }
 
     return (
-        <div style={{
+        <div style={{//These are here as there is not much, most is inhereted anyways.
             backgroundColor: '#1b1b1b',
             color: 'white',
             width: '400px',

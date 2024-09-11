@@ -12,8 +12,8 @@ def get_soup(url)  -> object:
         response = requests.get(url)
         response.raise_for_status()
         return BeautifulSoup(response.content, 'html.parser')
-    except requests.exceptions.RequestException as er:
-        print(f"Error fetching the URL: {er}")
+    except requests.exceptions.RequestException as error:
+        print(f"Error fetching the URL: {error}")
         return None
 
 #meta tag scraping, fetch meta tag by info associated to it in bs4 object

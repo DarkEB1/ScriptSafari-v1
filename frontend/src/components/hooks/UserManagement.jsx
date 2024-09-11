@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
-
+//CUSTOM HOOK TO ENSURE THAT USER IS SIGNED IN, THAT BROWSER RECEIVES TOKEN FROM AUTH0, AND THAT NOTHING FUNNY HAPPENS WHEN THE REQUEST IS SENT TO DATABASE
 const useUserManagement = ({ user, isAuthenticated, isLoading }) => {
   const { getAccessTokenSilently } = useAuth0();
   const debounceTimeout = useRef(null);  //useRef to keep track of the timeout
@@ -10,6 +10,7 @@ const useUserManagement = ({ user, isAuthenticated, isLoading }) => {
     console.log(isAuthenticated);
     console.log(user);
 
+    //Delay added here as auth0 was called twice, and only the later one passes a token to browser
     const delayExecution = async () => {
       if (isLoading || !isAuthenticated || !user) {
         console.log('Auth0 is still loading or user is not authenticated, skipping user management');
@@ -19,6 +20,7 @@ const useUserManagement = ({ user, isAuthenticated, isLoading }) => {
       console.log('User is authenticated and user data is available');
 
       try {
+        //Get auth0 access token to make sure everything is smooth, then write create user api request
         const token = await getAccessTokenSilently();
         console.log('Token obtained:', token);
 
@@ -30,7 +32,7 @@ const useUserManagement = ({ user, isAuthenticated, isLoading }) => {
           },
           body: JSON.stringify({
             email: user.email,
-            password: 'PASSWORD',
+            password: 'PASSWORD', //auth0 unfortunately doen't pass this through so I left a default, user can change this
             username: user.nickname,
             pfp: user.picture,
           }),
@@ -45,6 +47,7 @@ const useUserManagement = ({ user, isAuthenticated, isLoading }) => {
             existingUser.email !== user.email ||
             existingUser.pfp !== user.picture
           ) {
+            //If user already in database fields, means user created, so try to update user fields with data if it has been updated
             await fetch('http://localhost:5000/update-user', {
               method: 'PUT',
               headers: {

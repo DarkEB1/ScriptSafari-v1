@@ -26,12 +26,12 @@ function App() {
   });
   return (
     <Router>
-      <Auth0Provider
+      <Auth0Provider //these are my auth0 keys, DO NOT REPLACE AS I HAVE CONFIGURED SERVER ON BOTH SIDES, routing is also handled here as backup for the navbar, this uses the protectedroute object I defined
         domain="dev-dic5qyxmh3023gsq.us.auth0.com"
         clientId="Mer00G3ZeV9ns6fUfkJsxXmDyxkiO3O5"
         authorizationParams={{ redirect_uri: window.location.origin }}
         onRedirectCallback={onRedirectCallback}
-      >
+      > 
         <Navbar />
         <Routes>
           <Route path="/about" element={<About />} />

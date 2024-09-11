@@ -15,6 +15,7 @@ const GraphComponent = () => {
 
   useEffect(() => {
     const fetchGraphData = async () => {
+      //Try to fetch graph data, if not, return respnse
       try {
         const response = await fetch('http://127.0.0.1:5000/graph', {
           method: 'GET',
@@ -24,12 +25,13 @@ const GraphComponent = () => {
         });
 
         if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+          throw new Error(`OOPSIE WOOPSIE - HTTP error! status: ${response.status}`);
         }
 
         const data = await response.json();
         let graph, scores;
         try {
+          //Convert text from database to actual data pre-graph transformation
           graph = JSON.parse(data.graph.replace(/'/g, '"').trim());
           scores = JSON.parse(data.scores.replace(/'/g, '"').trim());
         } catch (parseError) {
@@ -47,12 +49,12 @@ const GraphComponent = () => {
 
     fetchGraphData();
   }, []);
-
-  const transformData = (data) => {
+  
+  const transformData = (data) => { //Transform text data from database req to something useable by the react frontend, object that the library for graph can interpret and display
     const nodes = Object.keys(data).map((node) => ({
       id: node,
     }));
-
+    //Transform links for data in graph
     const links = Object.entries(data).flatMap(([node, connections]) => {
       if (!Array.isArray(connections)) {
         console.warn(`Unexpected connections value for ${node}:`, connections);
@@ -67,6 +69,7 @@ const GraphComponent = () => {
     return { nodes, links };
   };
 
+  //Manual config in here because my css was being funny
   const myConfig = {
     node: {
       color: 'lightblue',
@@ -90,7 +93,7 @@ const GraphComponent = () => {
     maxZoom: 2,
     minZoom: 0.5,
   };
-
+  //Below are the functions to determine what node is selected or clicked on and set it
   const onMouseOverNode = (nodeId) => {
     if (!selectedNode) {
       setHoveredNode(nodeId);
@@ -105,12 +108,13 @@ const GraphComponent = () => {
 
   const onClickNode = (nodeId) => {
     setSelectedNode(nodeId);
-    setHoveredNode(nodeId); // Treat click as if it's a permanent hover
+    setHoveredNode(nodeId); // Treat click as if it's a permanent hover because i never set it back to null
     setSearchResult(null)
   };
 
   const handleSearch = async () => {
     try {
+      //functio to retrieve data about given node
       const response = await fetch(`http://127.0.0.1:5000/get-node/${encodeURIComponent(searchQuery)}`, {
         method: 'GET',
         headers: {
@@ -123,7 +127,7 @@ const GraphComponent = () => {
       }
 
       const data = await response.json();
-      if (data && data.title) {
+      if (data && data.title) {//set data from query to be used by frontend
         setSearchResult(data); 
         setSelectedNode(data.title);
         setHoveredNode(data.title);
@@ -135,7 +139,7 @@ const GraphComponent = () => {
       console.error('Error fetching node data:', error);
     }
   };
-
+  //make it so that when I click on a citation or summary button, it brings me to that page with the box already filled in.
   const handleCitationClick = async () => {
     if (selectedNode) {
       setSearchQuery(selectedNode)

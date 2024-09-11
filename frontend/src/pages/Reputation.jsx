@@ -10,7 +10,7 @@ function Reputation() {
   const email = localStorage.getItem('userEmail');
   const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e) => {//function to submit results of form to add paper and return error if one occurs: I don't know why but sometimes you need to double click and sometimes it works the firest riome
     e.preventDefault();
 
     if (!paperLink) {
@@ -45,6 +45,7 @@ function Reputation() {
   return (
     <div>
       <h2>Add Paper to Reputation System</h2>
+      <h2>THIS WILL TAKE A WHILE - DO NOT QUIT</h2>
       <h3>Note: you may have to click submit twice if a server error occurs</h3>
       <form onSubmit={handleSubmit}>
         <div>
@@ -69,7 +70,7 @@ function Reputation() {
           <p>{responseMessage}</p>
         </div>
       )}
-      {isSuccessful && (
+      {isSuccessful && (//display instance of graph if needed
         <div>
           <GraphComponent />
         </div>

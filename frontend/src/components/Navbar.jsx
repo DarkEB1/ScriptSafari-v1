@@ -12,6 +12,7 @@ const Navbar = () => {
   console.log(user);
   if (isAuthenticated!=false){
     console.log('Triggering API call');
+    //call user management to set user details
     useUserManagement({ user, isAuthenticated, isLoading });
     localStorage.setItem('userEmail', user.email);
   }
@@ -19,7 +20,7 @@ const Navbar = () => {
     return <div>Loading...</div>;
   }
 
-  return (
+  return (//set links using react router dom to different parts of my website, these are dynamic based on whether I am signed in or not using isAuthenticated
     <nav className="navbar">
       <div className="navbar-logo">SCRIPTSAFARI</div>
       <ul className="navbar-links">

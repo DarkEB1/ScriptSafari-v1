@@ -34,6 +34,7 @@ cursor2 = db.cursor()
 query2 = "SELECT content FROM graph WHERE cid=2"
 cursor2.execute(query2)
 scores_data = cursor2.fetchone()
+cursor2.close()
 print(graph_data[0], scores_data[0])
 gra = ast.literal_eval(graph_data[0])
 sc = ast.literal_eval(scores_data[0])
@@ -65,7 +66,6 @@ def add_paper(paper_link):
     if article_data["title"]:
         try:
             db.start_transaction()
-
             cursor = db.cursor(dictionary=True)
             query = "SELECT * FROM `graph-entries` WHERE title = %s"
             cursor.execute(query, (article_data["title"],))

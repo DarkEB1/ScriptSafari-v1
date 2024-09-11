@@ -5,7 +5,7 @@ import './Citations.css'
 function Citations() {
   const location = useLocation();
   const [paperLink, setPaperLink] = useState('');
-  const [citationStyle, setCitationStyle] = useState('apa');
+  const [citationStyle, setCitationStyle] = useState('apa');//I have to set apa here as default as this is what is selected when you click on this part of the site
   const [citationResult, setCitationResult] = useState('');
   
   useEffect(() => {
@@ -15,14 +15,14 @@ function Citations() {
     }
   }, [location.state]);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e) => {//to ensure paper is actually entered
     e.preventDefault();
     if (!paperLink) {
       alert('Please enter a paper link.');
       return;
     }
 
-    try {
+    try {//fetch results from database for citation in given style
       const response = await fetch(`http://127.0.0.1:5000/citation/${encodeURIComponent(paperLink)}?style=${citationStyle}`);
       const citationText = await response.text();
       setCitationResult(citationText);

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import './Citations.css'
-
+//Basically the same as citation page, but change api call for summary
 function Summary() {
   const location = useLocation();
   const [paperLink, setPaperLink] = useState('');

@@ -5,7 +5,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 function ProtectedRoute({ component }) {
   const { isAuthenticated, isLoading } = useAuth0();
   const location = useLocation();
-
+  //Wait till not loading, then configure authentication stuff
   if (isLoading) {
     return <div>Loading...</div>;
   }

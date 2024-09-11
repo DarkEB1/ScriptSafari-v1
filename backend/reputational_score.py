@@ -18,7 +18,9 @@ from institution_ranking_scraper import *
 from author_info_scraper import *
 from graph import *
 
-
+"""
+This function generates the first time score for given node accordiong to scraped params, then calls neighbour score calc
+"""
 def defaultscore(articleinfo, maingraph, db):
     article = articleinfo['title']
     affiliations = articleinfo['affiliations'] or ''
@@ -59,6 +61,7 @@ def defaultscore(articleinfo, maingraph, db):
     newscore = nearest_neighbour(article, maingraph, finalscore, db, visited=None)
     return {article: newscore}
 
+#Recursively calculates score for each node as avg of nodes it is connected to, this recaclualtes the whole graph of nodes connected to the root node, stores the visited nodes so as not to revisit accidentally
 def nearest_neighbour(article, maingraph, currentscore, db, visited=None):
     if visited is None:
         visited = set()
@@ -80,6 +83,7 @@ def nearest_neighbour(article, maingraph, currentscore, db, visited=None):
     return currentscore
     #TODO write updated score to maingraph, and to database
 
+#Write new score to database (Unfortunately quite inefficient as each request runs sequentially)
 def write_score(article, score, db):
     cursor = db.cursor()
     update_query = """
