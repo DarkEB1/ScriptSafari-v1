@@ -120,5 +120,5 @@ button:active {
 
 .search-result-panel a {
   color: hsl(208, 55%, 46%);
-  text-decoration: underline; /* Optional: to make it look more like a traditional link */
+  text-decoration: underline;
 }

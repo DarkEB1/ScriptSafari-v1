@@ -1,7 +1,7 @@
 import csv
 from get_journal_ranking import journal_similarity
 import re
-
+#Try to return parts of scraped institution so only institution name can be used for lookup
 def parse_institution_string(institution_str):
     # Regex pattern for parsing institutions
     pattern = re.compile(r"""
@@ -39,6 +39,7 @@ def parse_institution_string(institution_str):
     
     return None
 
+#Try to do post processing on institution scraped, use institution name and search for it in csv ranking, return line number if found
 def fetch_institution_rank(institution: str) -> int:
     rank = 0 
     out = parse_institution_string(institution)

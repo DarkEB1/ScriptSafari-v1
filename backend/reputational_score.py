@@ -5,10 +5,19 @@ For author: Store top citation, calculate as percentage of top citation
 General ranking: aggregate all sub scores, find as percentage of maximum possible score
 """
 
+"""
+Score from 1-100 on journal
+Score from 1-100 on author based on number of citations (internal comparative ranking)
+Score from 1-100 on Institution
+Score from 1-100 by average score of connected nodes
+Total score is aggregate of all/4
+"""
+
 from get_journal_ranking import *
 from institution_ranking_scraper import *
 from author_info_scraper import *
 from graph import *
+
 
 def defaultscore(articleinfo, maingraph, db):
     article = articleinfo['title']

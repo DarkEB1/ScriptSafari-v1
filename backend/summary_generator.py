@@ -1,5 +1,7 @@
 import validators
 from openai import OpenAI
+import openai
+import time
 
 class Summary_gen:
     #Summary Generation using openapi, can be called prior to addition to graph
@@ -52,6 +54,7 @@ class Summary_gen:
 
         return "Failed to generate summary after multiple attempts due to rate limiting."
     
+    # Call summary generator if url is validated by validators library
     def fetch_sum(self):
         if validators.url(self.request):
             out = self.generate_summary()

@@ -3,7 +3,7 @@ import { useAuth0 } from '@auth0/auth0-react';
 
 const useUserManagement = ({ user, isAuthenticated, isLoading }) => {
   const { getAccessTokenSilently } = useAuth0();
-  const debounceTimeout = useRef(null);  // Using useRef to keep track of the timeout
+  const debounceTimeout = useRef(null);  //useRef to keep track of the timeout
 
   useEffect(() => {
     console.log('useUserManagement hook called');
@@ -65,16 +65,16 @@ const useUserManagement = ({ user, isAuthenticated, isLoading }) => {
       }
     };
 
-    // Debounce the delayExecution function
+    // Debounce delayExecution
     if (debounceTimeout.current) {
       clearTimeout(debounceTimeout.current);
     }
 
     debounceTimeout.current = setTimeout(() => {
       delayExecution();
-    }, 1500); // 1.5-second delay
+    }, 1500);
 
-    // Cleanup function to clear the timeout if the component unmounts or dependencies change
+    // Cleanup function to clear the timeout if the component umounts or dependencies change
     return () => {
       if (debounceTimeout.current) {
         clearTimeout(debounceTimeout.current);
