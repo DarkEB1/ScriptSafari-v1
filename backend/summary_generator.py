@@ -16,7 +16,7 @@ class Summary_gen:
         self.request = request
         self.client = OpenAI(
             # defaults to os.environ.get("OPENAI_API_KEY")
-            api_key="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",
+            api_key=HERE,
         )
 
     """
